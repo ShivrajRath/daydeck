@@ -36,6 +36,16 @@ export interface Task {
 }
 
 /**
+ * Tooltip information for a bucket section.
+ */
+export interface BucketTooltip {
+  /** Description of the section's purpose */
+  description: string;
+  /** 4 practical examples for this section */
+  examples: string[];
+}
+
+/**
  * A named container (column) for tasks on the Dashboard.
  */
 export interface Bucket {
@@ -55,6 +65,8 @@ export interface Bucket {
   showCounter: boolean;
   /** Dashboard section width in pixels */
   widthPx: number;
+  /** Optional tooltip information for this bucket */
+  tooltip?: BucketTooltip;
 }
 
 /**
@@ -91,9 +103,60 @@ export interface DocketSettings {
 
 /** Default buckets matching the prototype design */
 export const DEFAULT_BUCKETS: Bucket[] = [
-  { id: 'today', name: 'Today', icon: '🔥', color: '#f14c4c', order: 0, showCounter: false, widthPx: 320 },
-  { id: 'next', name: 'Next', icon: '⏭️', color: '#d7ba7d', order: 1, showCounter: false, widthPx: 320 },
-  { id: 'waiting', name: 'Waiting', icon: '🤝', color: '#c586c0', order: 2, showCounter: true, widthPx: 320 },
+  {
+    id: 'today',
+    name: 'Today',
+    icon: '🔥',
+    color: '#f14c4c',
+    order: 0,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'These are things you actively expect to work on today.',
+      examples: [
+        'Finish the quarterly report',
+        'Reply to urgent client emails',
+        'Complete the code review',
+        'Prepare for the 3pm meeting',
+      ],
+    },
+  },
+  {
+    id: 'next',
+    name: 'Next',
+    icon: '⏭️',
+    color: '#d7ba7d',
+    order: 1,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'Things that matter soon but not today, maybe this week.',
+      examples: [
+        'Plan the sprint roadmap',
+        'Draft the project proposal',
+        'Schedule team retrospective',
+        'Review the new feature requirements',
+      ],
+    },
+  },
+  {
+    id: 'waiting',
+    name: 'Waiting',
+    icon: '🤝',
+    color: '#c586c0',
+    order: 2,
+    showCounter: true,
+    widthPx: 320,
+    tooltip: {
+      description: 'Things blocked on someone else.',
+      examples: [
+        'Waiting for design approval',
+        'Awaiting client feedback',
+        'Blocked on API documentation',
+        'Waiting for server deployment',
+      ],
+    },
+  },
   {
     id: 'focus-hub',
     name: 'Deep Work',
@@ -102,10 +165,70 @@ export const DEFAULT_BUCKETS: Bucket[] = [
     order: 3,
     showCounter: false,
     widthPx: 320,
+    tooltip: {
+      description: 'These require uninterrupted thinking.',
+      examples: [
+        'Write the core algorithm',
+        'Design the system architecture',
+        'Debug the complex issue',
+        'Research the new technology',
+      ],
+    },
   },
-  { id: 'learning', name: 'Learning', icon: '📚', color: '#4ec9b0', order: 4, showCounter: false, widthPx: 320 },
-  { id: 'ideas', name: 'Ideas', icon: '💡', color: '#ce9178', order: 5, showCounter: false, widthPx: 320 },
-  { id: 'watch', name: 'Watch', icon: '🔍', color: '#4fc1ff', order: 6, showCounter: false, widthPx: 320 },
+  {
+    id: 'learning',
+    name: 'Learning',
+    icon: '📚',
+    color: '#4ec9b0',
+    order: 4,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'Everything here should answer "Will reading this make me better?"',
+      examples: [
+        'Read the engineering blog',
+        'Complete the online course',
+        'Study the design patterns',
+        'Learn the new framework',
+      ],
+    },
+  },
+  {
+    id: 'ideas',
+    name: 'Ideas',
+    icon: '💡',
+    color: '#ce9178',
+    order: 5,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'Random thoughts (Automation ideas, feature ideas, career ideas, architecture ideas).',
+      examples: [
+        'Automate the deployment process',
+        'Add dark mode to the app',
+        'Explore the tech lead role',
+        'Refactor the database schema',
+      ],
+    },
+  },
+  {
+    id: 'watch',
+    name: 'Watch',
+    icon: '🔍',
+    color: '#4fc1ff',
+    order: 6,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'Things you are monitoring.',
+      examples: [
+        'Track the competitor launch',
+        'Monitor the system performance',
+        'Watch the industry trends',
+        'Follow the open source project',
+      ],
+    },
+  },
 ];
 
 /** Default semantic tags */

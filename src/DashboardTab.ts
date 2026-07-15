@@ -90,6 +90,18 @@ export class DashboardTab {
     const rightActions = header.createDiv('docket-bucket-header-right');
     rightActions.createSpan({ cls: 'docket-bucket-count', text: String(tasks.length) });
 
+    if (bucket.tooltip) {
+      const infoBtn = rightActions.createSpan({
+        cls: 'docket-bucket-info',
+        text: 'ℹ️',
+        attr: { title: 'Section info' },
+      });
+      infoBtn.addEventListener('click', (e: MouseEvent) => {
+        e.stopPropagation();
+        this.showBucketTooltip(bucket);
+      });
+    }
+
     const editBtn = rightActions.createSpan({
       cls: 'docket-bucket-edit',
       text: '✏️',
@@ -187,6 +199,10 @@ export class DashboardTab {
 
   private showBucketEditModal(bucket: Bucket): void {
     new BucketEditModal(this.plugin, bucket).open();
+  }
+
+  private showBucketTooltip(bucket: Bucket): void {
+    new BucketTooltipModal(this.plugin, bucket).open();
   }
 
   private setupBucketDrag(header: HTMLElement, bucketEl: HTMLElement, bucketId: string): void {
@@ -944,6 +960,59 @@ class ReminderModal extends Modal {
           this.close();
         });
       });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+class BucketTooltipModal extends Modal {
+  private plugin: DocketPlugin;
+  private bucket: Bucket;
+
+  constructor(plugin: DocketPlugin, bucket: Bucket) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.bucket = bucket;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass('docket-bucket-tooltip-modal');
+
+    const header = contentEl.createDiv('docket-tooltip-header');
+    header.createSpan({ cls: 'docket-tooltip-icon', text: this.bucket.icon });
+    header.createEl('h2', { text: this.bucket.name });
+
+    const tooltip = this.bucket.tooltip;
+    if (tooltip) {
+      contentEl.createEl('p', {
+        cls: 'docket-tooltip-description',
+        text: tooltip.description,
+      });
+
+      contentEl.createEl('h3', {
+        cls: 'docket-tooltip-examples-title',
+        text: 'Examples',
+      });
+
+      const examplesList = contentEl.createEl('ul', {
+        cls: 'docket-tooltip-examples-list',
+      });
+
+      tooltip.examples.forEach((example) => {
+        examplesList.createEl('li', {
+          cls: 'docket-tooltip-example-item',
+          text: example,
+        });
+      });
+    }
+
+    const closeBtn = contentEl.createDiv('docket-tooltip-close-btn');
+    closeBtn.textContent = 'Close';
+    closeBtn.addEventListener('click', () => this.close());
   }
 
   onClose(): void {

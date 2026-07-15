@@ -27,9 +27,60 @@ var import_obsidian4 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_BUCKETS = [
-  { id: "today", name: "Today", icon: "\u{1F525}", color: "#f14c4c", order: 0, showCounter: false, widthPx: 320 },
-  { id: "next", name: "Next", icon: "\u23ED\uFE0F", color: "#d7ba7d", order: 1, showCounter: false, widthPx: 320 },
-  { id: "waiting", name: "Waiting", icon: "\u{1F91D}", color: "#c586c0", order: 2, showCounter: true, widthPx: 320 },
+  {
+    id: "today",
+    name: "Today",
+    icon: "\u{1F525}",
+    color: "#f14c4c",
+    order: 0,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: "These are things you actively expect to work on today.",
+      examples: [
+        "Finish the quarterly report",
+        "Reply to urgent client emails",
+        "Complete the code review",
+        "Prepare for the 3pm meeting"
+      ]
+    }
+  },
+  {
+    id: "next",
+    name: "Next",
+    icon: "\u23ED\uFE0F",
+    color: "#d7ba7d",
+    order: 1,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: "Things that matter soon but not today, maybe this week.",
+      examples: [
+        "Plan the sprint roadmap",
+        "Draft the project proposal",
+        "Schedule team retrospective",
+        "Review the new feature requirements"
+      ]
+    }
+  },
+  {
+    id: "waiting",
+    name: "Waiting",
+    icon: "\u{1F91D}",
+    color: "#c586c0",
+    order: 2,
+    showCounter: true,
+    widthPx: 320,
+    tooltip: {
+      description: "Things blocked on someone else.",
+      examples: [
+        "Waiting for design approval",
+        "Awaiting client feedback",
+        "Blocked on API documentation",
+        "Waiting for server deployment"
+      ]
+    }
+  },
   {
     id: "focus-hub",
     name: "Deep Work",
@@ -37,11 +88,71 @@ var DEFAULT_BUCKETS = [
     color: "#b4befe",
     order: 3,
     showCounter: false,
-    widthPx: 320
+    widthPx: 320,
+    tooltip: {
+      description: "These require uninterrupted thinking.",
+      examples: [
+        "Write the core algorithm",
+        "Design the system architecture",
+        "Debug the complex issue",
+        "Research the new technology"
+      ]
+    }
   },
-  { id: "learning", name: "Learning", icon: "\u{1F4DA}", color: "#4ec9b0", order: 4, showCounter: false, widthPx: 320 },
-  { id: "ideas", name: "Ideas", icon: "\u{1F4A1}", color: "#ce9178", order: 5, showCounter: false, widthPx: 320 },
-  { id: "watch", name: "Watch", icon: "\u{1F50D}", color: "#4fc1ff", order: 6, showCounter: false, widthPx: 320 }
+  {
+    id: "learning",
+    name: "Learning",
+    icon: "\u{1F4DA}",
+    color: "#4ec9b0",
+    order: 4,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: 'Everything here should answer "Will reading this make me better?"',
+      examples: [
+        "Read the engineering blog",
+        "Complete the online course",
+        "Study the design patterns",
+        "Learn the new framework"
+      ]
+    }
+  },
+  {
+    id: "ideas",
+    name: "Ideas",
+    icon: "\u{1F4A1}",
+    color: "#ce9178",
+    order: 5,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: "Random thoughts (Automation ideas, feature ideas, career ideas, architecture ideas).",
+      examples: [
+        "Automate the deployment process",
+        "Add dark mode to the app",
+        "Explore the tech lead role",
+        "Refactor the database schema"
+      ]
+    }
+  },
+  {
+    id: "watch",
+    name: "Watch",
+    icon: "\u{1F50D}",
+    color: "#4fc1ff",
+    order: 6,
+    showCounter: false,
+    widthPx: 320,
+    tooltip: {
+      description: "Things you are monitoring.",
+      examples: [
+        "Track the competitor launch",
+        "Monitor the system performance",
+        "Watch the industry trends",
+        "Follow the open source project"
+      ]
+    }
+  }
 ];
 var DEFAULT_TAGS = [
   { id: "focus", name: "Focus", color: "#f14c4c" },
@@ -165,6 +276,17 @@ var DashboardTab = class {
     titleEl.createSpan({ cls: "docket-bucket-name", text: bucket.name });
     const rightActions = header.createDiv("docket-bucket-header-right");
     rightActions.createSpan({ cls: "docket-bucket-count", text: String(tasks.length) });
+    if (bucket.tooltip) {
+      const infoBtn = rightActions.createSpan({
+        cls: "docket-bucket-info",
+        text: "\u2139\uFE0F",
+        attr: { title: "Section info" }
+      });
+      infoBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.showBucketTooltip(bucket);
+      });
+    }
     const editBtn = rightActions.createSpan({
       cls: "docket-bucket-edit",
       text: "\u270F\uFE0F",
@@ -249,6 +371,9 @@ var DashboardTab = class {
   }
   showBucketEditModal(bucket) {
     new BucketEditModal(this.plugin, bucket).open();
+  }
+  showBucketTooltip(bucket) {
+    new BucketTooltipModal(this.plugin, bucket).open();
   }
   setupBucketDrag(header, bucketEl, bucketId) {
     header.addEventListener("dragstart", (e) => {
@@ -850,6 +975,47 @@ var ReminderModal = class extends import_obsidian.Modal {
         this.close();
       });
     });
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+var BucketTooltipModal = class extends import_obsidian.Modal {
+  constructor(plugin, bucket) {
+    super(plugin.app);
+    this.plugin = plugin;
+    this.bucket = bucket;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("docket-bucket-tooltip-modal");
+    const header = contentEl.createDiv("docket-tooltip-header");
+    header.createSpan({ cls: "docket-tooltip-icon", text: this.bucket.icon });
+    header.createEl("h2", { text: this.bucket.name });
+    const tooltip = this.bucket.tooltip;
+    if (tooltip) {
+      contentEl.createEl("p", {
+        cls: "docket-tooltip-description",
+        text: tooltip.description
+      });
+      contentEl.createEl("h3", {
+        cls: "docket-tooltip-examples-title",
+        text: "Examples"
+      });
+      const examplesList = contentEl.createEl("ul", {
+        cls: "docket-tooltip-examples-list"
+      });
+      tooltip.examples.forEach((example) => {
+        examplesList.createEl("li", {
+          cls: "docket-tooltip-example-item",
+          text: example
+        });
+      });
+    }
+    const closeBtn = contentEl.createDiv("docket-tooltip-close-btn");
+    closeBtn.textContent = "Close";
+    closeBtn.addEventListener("click", () => this.close());
   }
   onClose() {
     this.contentEl.empty();

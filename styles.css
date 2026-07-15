@@ -372,7 +372,12 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--docket-bucket-color, var(--background-modifier-border)) 18%, transparent) 100%
+    color-mix(
+        in srgb,
+        var(--docket-bucket-color, var(--background-modifier-border)) 18%,
+        transparent
+      )
+      100%
   );
 }
 
@@ -421,7 +426,8 @@
 }
 
 .docket-bucket-edit,
-.docket-bucket-delete {
+.docket-bucket-delete,
+.docket-bucket-info {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s;
@@ -429,12 +435,14 @@
 }
 
 .docket-bucket-header:hover .docket-bucket-edit,
-.docket-bucket-header:hover .docket-bucket-delete {
+.docket-bucket-header:hover .docket-bucket-delete,
+.docket-bucket-header:hover .docket-bucket-info {
   opacity: 0.7;
 }
 
 .docket-bucket-edit:hover,
-.docket-bucket-delete:hover {
+.docket-bucket-delete:hover,
+.docket-bucket-info:hover {
   opacity: 1;
 }
 
@@ -1247,6 +1255,92 @@
   opacity: 0.65;
   position: relative;
   transition: opacity 0.15s;
+}
+
+/* =============================================================================
+   BUCKET TOOLTIP MODAL
+   ============================================================================= */
+
+.docket-bucket-tooltip-modal {
+  max-width: 450px;
+}
+
+.docket-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.docket-tooltip-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.docket-tooltip-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-normal);
+  margin: 0;
+}
+
+.docket-tooltip-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  margin: 0 0 16px 0;
+  padding: 12px;
+  background-color: var(--background-secondary);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: 4px;
+}
+
+.docket-tooltip-examples-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 10px 0;
+}
+
+.docket-tooltip-examples-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+.docket-tooltip-example-item {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-normal);
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+  border-left: 2px solid var(--background-modifier-border);
+  transition: border-color 0.15s;
+}
+
+.docket-tooltip-example-item:hover {
+  border-left-color: var(--interactive-accent);
+}
+
+.docket-tooltip-close-btn {
+  text-align: center;
+  padding: 10px;
+  background-color: var(--background-modifier-hover);
+  border-radius: 6px;
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.docket-tooltip-close-btn:hover {
+  background-color: var(--interactive-accent);
+  color: #fff;
 }
 
 .docket-archive-card:hover {
