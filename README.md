@@ -24,7 +24,35 @@ Docket ensures you never lose sight of the big picture while staying focused on 
 
 ---
 
-## �🌟 Key Features
+## 📸 Interface Overview
+
+### Light Mode
+
+![Light Mode](screenshots/light-mode.png)
+
+### Dark Mode
+
+![Dark Mode](screenshots/dark-mode.png)
+
+### Tag Filtering
+
+![Filter by Tags](screenshots/filter-by-tags.png)
+
+### Task Reminders
+
+![Reminders](screenshots/reminder.png)
+
+### Section Settings
+
+![Section Settings](screenshots/settings-sections.png)
+
+### Tag Settings
+
+![Tag Settings](screenshots/settings-tags.png)
+
+---
+
+## 🌟 Key Features
 
 ### 📊 Responsive Section Grid
 
@@ -66,34 +94,6 @@ Docket ensures you never lose sight of the big picture while staying focused on 
 - **Search functionality** to find past completed work
 - **One-click restore** to bring tasks back to active sections
 - **Task metadata** preserved including tags and completion dates
-
----
-
-## 📸 Interface Overview
-
-### Light Mode
-
-![Light Mode](screenshots/light-mode.png)
-
-### Dark Mode
-
-![Dark Mode](screenshots/dark-mode.png)
-
-### Tag Filtering
-
-![Filter by Tags](screenshots/filter-by-tags.png)
-
-### Task Reminders
-
-![Reminders](screenshots/reminder.png)
-
-### Section Settings
-
-![Section Settings](screenshots/settings-sections.png)
-
-### Tag Settings
-
-![Tag Settings](screenshots/settings-tags.png)
 
 ---
 
@@ -298,6 +298,12 @@ Open the **Docket Settings** tab from the plugin's sidebar menu to customize:
 
 ---
 
+## 🤝 Contributing
+
+I welcome pull requests, bug fixes, and contributions from the community! If you'd like to contribute to Docket, please check out the [CONTRIBUTING.md](CONTRIBUTING.md) guide for details on how to get started.
+
+---
+
 ## 🤝 Support
 
 Found a bug or have a feature request? Please [open an issue](https://github.com/ShivrajRath/docket/issues) on GitHub.
@@ -308,4 +314,4 @@ Found a bug or have a feature request? Please [open an issue](https://github.com
 
 If you find Docket helpful and want to support its development, consider buying me a coffee!
 
-[![Buy me a coffee](https://ko-fi.com/img/githubbutton/sm.svg)](https://ko-fi.com/raths)
+[![Buy me a coffee](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/raths)
