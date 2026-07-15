@@ -163,12 +163,19 @@ export default class DocketPlugin extends Plugin {
     let changed = false;
 
     for (const task of this.settings.tasks) {
-      if (!task.reminderAt || task.isCompleted || task.reminderAt > now) {
+      if (!task.reminderAt || task.isCompleted || task.reminderAt > now || task.reminderNotified) {
+        continue;
+      }
+
+      // Skip notifications for date-only reminders
+      if (task.reminderDateOnly) {
+        task.reminderNotified = true;
+        changed = true;
         continue;
       }
 
       this.showReminderNotification(task);
-      task.reminderAt = undefined;
+      task.reminderNotified = true;
       changed = true;
     }
 

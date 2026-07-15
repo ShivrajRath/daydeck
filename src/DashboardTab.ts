@@ -349,7 +349,7 @@ export class DashboardTab {
       cls: 'docket-task-reminder',
       attr: {
         title: task.reminderAt
-          ? `Reminder: ${this.formatReminderLabel(task.reminderAt)}`
+          ? `Reminder: ${this.formatReminderLabel(task.reminderAt, task.reminderDateOnly)}`
           : 'Set reminder',
       },
       text: task.reminderAt ? '🔔' : '🔕',
@@ -399,10 +399,11 @@ export class DashboardTab {
     }
 
     if (task.reminderAt) {
-      metaRow.createSpan({
+      const reminderLabel = metaRow.createSpan({
         cls: 'docket-reminder-label',
-        text: `🔔 ${this.formatReminderLabel(task.reminderAt)}`,
+        text: `🔔 ${this.formatReminderLabel(task.reminderAt, task.reminderDateOnly)}`,
       });
+      if (task.reminderAt <= Date.now()) reminderLabel.addClass('is-overdue');
     }
 
     card.addEventListener('contextmenu', (e) => {
@@ -425,10 +426,19 @@ export class DashboardTab {
     return card;
   }
 
-  private formatReminderLabel(timestamp: number): string {
+  private formatReminderLabel(timestamp: number, dateOnly?: boolean): string {
     const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
+
+    if (dateOnly) {
+      if (isToday) return 'Today';
+      return date.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+
     const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
     if (isToday) return `Today ${time}`;
@@ -957,6 +967,7 @@ class ReminderModal extends Modal {
 
     let selectedDate = dateStr;
     let selectedTime = timeStr;
+    let selectedDateOnly = this.task.reminderDateOnly ?? false;
 
     new Setting(contentEl).setName('Date').addText((text) => {
       text.inputEl.type = 'date';
@@ -973,6 +984,15 @@ class ReminderModal extends Modal {
     });
 
     new Setting(contentEl)
+      .setName('Date only')
+      .setDesc('Show date without sending a notification')
+      .addToggle((toggle) => {
+        toggle.setValue(selectedDateOnly).onChange((value) => {
+          selectedDateOnly = value;
+        });
+      });
+
+    new Setting(contentEl)
       .addButton((btn) => {
         btn
           .setButtonText('Save reminder')
@@ -981,6 +1001,8 @@ class ReminderModal extends Modal {
             const reminderAt = new Date(`${selectedDate}T${selectedTime}`).getTime();
             if (!Number.isNaN(reminderAt)) {
               this.task.reminderAt = reminderAt;
+              this.task.reminderDateOnly = selectedDateOnly;
+              this.task.reminderNotified = false;
               await this.plugin.saveSettings();
             }
             this.close();
@@ -989,6 +1011,8 @@ class ReminderModal extends Modal {
       .addButton((btn) => {
         btn.setButtonText('Clear').onClick(async () => {
           this.task.reminderAt = undefined;
+          this.task.reminderDateOnly = undefined;
+          this.task.reminderNotified = undefined;
           await this.plugin.saveSettings();
           this.close();
         });

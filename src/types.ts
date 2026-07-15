@@ -33,6 +33,10 @@ export interface Task {
   order: number;
   /** Unix timestamp (ms) for a scheduled reminder, if set */
   reminderAt?: number;
+  /** Whether the reminder notification has already been shown */
+  reminderNotified?: boolean;
+  /** Whether this is a date-only reminder (no time, no notification) */
+  reminderDateOnly?: boolean;
 }
 
 /**

@@ -492,7 +492,7 @@ var DashboardTab = class {
     const reminderBtn = taskMain.createSpan({
       cls: "docket-task-reminder",
       attr: {
-        title: task.reminderAt ? `Reminder: ${this.formatReminderLabel(task.reminderAt)}` : "Set reminder"
+        title: task.reminderAt ? `Reminder: ${this.formatReminderLabel(task.reminderAt, task.reminderDateOnly)}` : "Set reminder"
       },
       text: task.reminderAt ? "\u{1F514}" : "\u{1F515}"
     });
@@ -535,10 +535,11 @@ var DashboardTab = class {
       });
     }
     if (task.reminderAt) {
-      metaRow.createSpan({
+      const reminderLabel = metaRow.createSpan({
         cls: "docket-reminder-label",
-        text: `\u{1F514} ${this.formatReminderLabel(task.reminderAt)}`
+        text: `\u{1F514} ${this.formatReminderLabel(task.reminderAt, task.reminderDateOnly)}`
       });
+      if (task.reminderAt <= Date.now()) reminderLabel.addClass("is-overdue");
     }
     card.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -556,10 +557,17 @@ var DashboardTab = class {
     });
     return card;
   }
-  formatReminderLabel(timestamp) {
+  formatReminderLabel(timestamp, dateOnly) {
     const date = new Date(timestamp);
     const now = /* @__PURE__ */ new Date();
     const isToday = date.toDateString() === now.toDateString();
+    if (dateOnly) {
+      if (isToday) return "Today";
+      return date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric"
+      });
+    }
     const time = date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     if (isToday) return `Today ${time}`;
     return date.toLocaleDateString([], {
@@ -955,6 +963,7 @@ var ReminderModal = class extends import_obsidian.Modal {
     this.task = task;
   }
   onOpen() {
+    var _a;
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("docket-reminder-modal");
@@ -968,6 +977,7 @@ var ReminderModal = class extends import_obsidian.Modal {
     const timeStr = existing.toTimeString().slice(0, 5);
     let selectedDate = dateStr;
     let selectedTime = timeStr;
+    let selectedDateOnly = (_a = this.task.reminderDateOnly) != null ? _a : false;
     new import_obsidian.Setting(contentEl).setName("Date").addText((text) => {
       text.inputEl.type = "date";
       text.setValue(dateStr).onChange((value) => {
@@ -980,11 +990,18 @@ var ReminderModal = class extends import_obsidian.Modal {
         selectedTime = value;
       });
     });
+    new import_obsidian.Setting(contentEl).setName("Date only").setDesc("Show date without sending a notification").addToggle((toggle) => {
+      toggle.setValue(selectedDateOnly).onChange((value) => {
+        selectedDateOnly = value;
+      });
+    });
     new import_obsidian.Setting(contentEl).addButton((btn) => {
       btn.setButtonText("Save reminder").setCta().onClick(async () => {
         const reminderAt = (/* @__PURE__ */ new Date(`${selectedDate}T${selectedTime}`)).getTime();
         if (!Number.isNaN(reminderAt)) {
           this.task.reminderAt = reminderAt;
+          this.task.reminderDateOnly = selectedDateOnly;
+          this.task.reminderNotified = false;
           await this.plugin.saveSettings();
         }
         this.close();
@@ -992,6 +1009,8 @@ var ReminderModal = class extends import_obsidian.Modal {
     }).addButton((btn) => {
       btn.setButtonText("Clear").onClick(async () => {
         this.task.reminderAt = void 0;
+        this.task.reminderDateOnly = void 0;
+        this.task.reminderNotified = void 0;
         await this.plugin.saveSettings();
         this.close();
       });
@@ -1747,11 +1766,16 @@ var DocketPlugin = class extends import_obsidian4.Plugin {
     const now = Date.now();
     let changed = false;
     for (const task of this.settings.tasks) {
-      if (!task.reminderAt || task.isCompleted || task.reminderAt > now) {
+      if (!task.reminderAt || task.isCompleted || task.reminderAt > now || task.reminderNotified) {
+        continue;
+      }
+      if (task.reminderDateOnly) {
+        task.reminderNotified = true;
+        changed = true;
         continue;
       }
       this.showReminderNotification(task);
-      task.reminderAt = void 0;
+      task.reminderNotified = true;
       changed = true;
     }
     if (changed) {
