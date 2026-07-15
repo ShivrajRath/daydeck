@@ -889,6 +889,7 @@ var BucketEditModal = class extends import_obsidian.Modal {
     this.bucket = bucket;
   }
   onOpen() {
+    var _a, _b, _c;
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("docket-bucket-edit-modal");
@@ -906,11 +907,11 @@ var BucketEditModal = class extends import_obsidian.Modal {
       });
     });
     new import_obsidian.Setting(contentEl).setName("Width").setDesc("Section width in pixels").addText((text) => {
-      var _a;
+      var _a2;
       text.inputEl.type = "number";
       text.inputEl.min = "240";
       text.inputEl.max = "900";
-      text.setValue(String((_a = this.bucket.widthPx) != null ? _a : 320)).onChange(async (value) => {
+      text.setValue(String((_a2 = this.bucket.widthPx) != null ? _a2 : 320)).onChange(async (value) => {
         const parsed = Number.parseInt(value, 10);
         this.bucket.widthPx = Number.isFinite(parsed) ? Math.min(900, Math.max(240, parsed)) : 320;
         await this.plugin.saveSettings();
@@ -919,6 +920,26 @@ var BucketEditModal = class extends import_obsidian.Modal {
     new import_obsidian.Setting(contentEl).setName("Color").setDesc("Accent color for the section header").addColorPicker((picker) => {
       picker.setValue(this.bucket.color).onChange(async (value) => {
         this.bucket.color = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    const tooltipDesc = ((_a = this.bucket.tooltip) == null ? void 0 : _a.description) || "";
+    const tooltipExamples = ((_c = (_b = this.bucket.tooltip) == null ? void 0 : _b.examples) == null ? void 0 : _c.join("\n")) || "";
+    new import_obsidian.Setting(contentEl).setName("Section Description").setDesc("Purpose of this section (shown in info tooltip)").addTextArea((text) => {
+      text.setValue(tooltipDesc).onChange(async (value) => {
+        if (!this.bucket.tooltip) {
+          this.bucket.tooltip = { description: "", examples: [] };
+        }
+        this.bucket.tooltip.description = value.trim();
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian.Setting(contentEl).setName("Section Examples").setDesc("4 practical examples (one per line, shown in info tooltip)").addTextArea((text) => {
+      text.setValue(tooltipExamples).onChange(async (value) => {
+        if (!this.bucket.tooltip) {
+          this.bucket.tooltip = { description: "", examples: [] };
+        }
+        this.bucket.tooltip.examples = value.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
         await this.plugin.saveSettings();
       });
     });

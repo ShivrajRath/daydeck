@@ -888,6 +888,39 @@ class BucketEditModal extends Modal {
           await this.plugin.saveSettings();
         });
       });
+
+    // Tooltip editing section
+    const tooltipDesc = this.bucket.tooltip?.description || '';
+    const tooltipExamples = this.bucket.tooltip?.examples?.join('\n') || '';
+
+    new Setting(contentEl)
+      .setName('Section Description')
+      .setDesc('Purpose of this section (shown in info tooltip)')
+      .addTextArea((text) => {
+        text.setValue(tooltipDesc).onChange(async (value) => {
+          if (!this.bucket.tooltip) {
+            this.bucket.tooltip = { description: '', examples: [] };
+          }
+          this.bucket.tooltip.description = value.trim();
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(contentEl)
+      .setName('Section Examples')
+      .setDesc('4 practical examples (one per line, shown in info tooltip)')
+      .addTextArea((text) => {
+        text.setValue(tooltipExamples).onChange(async (value) => {
+          if (!this.bucket.tooltip) {
+            this.bucket.tooltip = { description: '', examples: [] };
+          }
+          this.bucket.tooltip.examples = value
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+          await this.plugin.saveSettings();
+        });
+      });
   }
 
   onClose(): void {
