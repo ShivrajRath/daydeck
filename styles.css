@@ -311,8 +311,8 @@
 }
 
 .docket-bucket-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   align-items: start;
 }
@@ -322,6 +322,11 @@
    ============================================================================= */
 
 .docket-bucket {
+  position: relative;
+  box-sizing: border-box;
+  flex: 0 0 var(--docket-bucket-width, 320px);
+  width: var(--docket-bucket-width, 320px);
+  max-width: 100%;
   background-color: color-mix(
     in srgb,
     var(--docket-bucket-color, var(--background-modifier-border)) 4%,
@@ -347,8 +352,33 @@
   opacity: 0.5;
 }
 
+.docket-bucket.is-resizing {
+  user-select: none;
+}
+
 .docket-bucket.docket-bucket-drop-target {
   box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+.docket-bucket-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--docket-bucket-color, var(--background-modifier-border)) 18%, transparent) 100%
+  );
+}
+
+.docket-bucket:hover .docket-bucket-resize-handle,
+.docket-bucket.is-resizing .docket-bucket-resize-handle {
+  opacity: 1;
 }
 
 .docket-bucket-header {

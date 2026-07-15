@@ -27,20 +27,21 @@ var import_obsidian4 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_BUCKETS = [
-  { id: "today", name: "Today", icon: "\u{1F525}", color: "#f14c4c", order: 0, showCounter: false },
-  { id: "next", name: "Next", icon: "\u23ED\uFE0F", color: "#d7ba7d", order: 1, showCounter: false },
-  { id: "waiting", name: "Waiting", icon: "\u{1F91D}", color: "#c586c0", order: 2, showCounter: true },
+  { id: "today", name: "Today", icon: "\u{1F525}", color: "#f14c4c", order: 0, showCounter: false, widthPx: 320 },
+  { id: "next", name: "Next", icon: "\u23ED\uFE0F", color: "#d7ba7d", order: 1, showCounter: false, widthPx: 320 },
+  { id: "waiting", name: "Waiting", icon: "\u{1F91D}", color: "#c586c0", order: 2, showCounter: true, widthPx: 320 },
   {
     id: "focus-hub",
     name: "Focus Hub",
     icon: "\u{1F9E0}",
     color: "#b4befe",
     order: 3,
-    showCounter: false
+    showCounter: false,
+    widthPx: 320
   },
-  { id: "learning", name: "Learning", icon: "\u{1F4DA}", color: "#4ec9b0", order: 4, showCounter: false },
-  { id: "ideas", name: "Ideas", icon: "\u{1F4A1}", color: "#ce9178", order: 5, showCounter: false },
-  { id: "watch", name: "Watch", icon: "\u{1F50D}", color: "#4fc1ff", order: 6, showCounter: false }
+  { id: "learning", name: "Learning", icon: "\u{1F4DA}", color: "#4ec9b0", order: 4, showCounter: false, widthPx: 320 },
+  { id: "ideas", name: "Ideas", icon: "\u{1F4A1}", color: "#ce9178", order: 5, showCounter: false, widthPx: 320 },
+  { id: "watch", name: "Watch", icon: "\u{1F50D}", color: "#4fc1ff", order: 6, showCounter: false, widthPx: 320 }
 ];
 var DEFAULT_TAGS = [
   { id: "deep-work", name: "DeepWork", color: "#f14c4c" },
@@ -126,16 +127,27 @@ var DashboardTab = class {
         icon: "\u{1F4CC}",
         color: "#888888",
         order: maxOrder + 1,
-        showCounter: false
+        showCounter: false,
+        widthPx: 320
       });
       await this.plugin.saveSettings();
     });
   }
   renderBucket(bucket, parent) {
+    var _a;
     const tasks = this.getActiveTasks(bucket.id);
     const bucketEl = parent.createDiv("docket-bucket");
     bucketEl.dataset.bucketId = bucket.id;
     bucketEl.style.setProperty("--docket-bucket-color", bucket.color);
+    const widthPx = Math.max(240, Math.min(900, (_a = bucket.widthPx) != null ? _a : 320));
+    bucketEl.style.setProperty("--docket-bucket-width", `${widthPx}px`);
+    bucketEl.style.width = `${widthPx}px`;
+    const resizeHandle = bucketEl.createDiv("docket-bucket-resize-handle");
+    resizeHandle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.startBucketResize(bucket, bucketEl, e);
+    });
     const header = bucketEl.createDiv("docket-bucket-header");
     header.draggable = true;
     header.createSpan({
@@ -200,6 +212,35 @@ var DashboardTab = class {
         rightActions.querySelector(".docket-bucket-count")
       );
     });
+  }
+  startBucketResize(bucket, bucketEl, event) {
+    var _a;
+    const startX = event.clientX;
+    const startWidth = (_a = bucket.widthPx) != null ? _a : 320;
+    const minWidth = 240;
+    const maxWidth = 900;
+    bucketEl.addClass("is-resizing");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    const onMove = (moveEvent) => {
+      const nextWidth = Math.max(
+        minWidth,
+        Math.min(maxWidth, startWidth + (moveEvent.clientX - startX))
+      );
+      bucket.widthPx = nextWidth;
+      bucketEl.style.setProperty("--docket-bucket-width", `${nextWidth}px`);
+      bucketEl.style.width = `${nextWidth}px`;
+    };
+    const finish = async () => {
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", finish);
+      bucketEl.removeClass("is-resizing");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      await this.plugin.saveSettings(true);
+    };
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", finish, { once: true });
   }
   showBucketEditModal(bucket) {
     new BucketEditModal(this.plugin, bucket).open();
@@ -734,6 +775,17 @@ var BucketEditModal = class extends import_obsidian.Modal {
         await this.plugin.saveSettings();
       });
     });
+    new import_obsidian.Setting(contentEl).setName("Width").setDesc("Section width in pixels").addText((text) => {
+      var _a;
+      text.inputEl.type = "number";
+      text.inputEl.min = "240";
+      text.inputEl.max = "900";
+      text.setValue(String((_a = this.bucket.widthPx) != null ? _a : 320)).onChange(async (value) => {
+        const parsed = Number.parseInt(value, 10);
+        this.bucket.widthPx = Number.isFinite(parsed) ? Math.min(900, Math.max(240, parsed)) : 320;
+        await this.plugin.saveSettings();
+      });
+    });
     new import_obsidian.Setting(contentEl).setName("Color").setDesc("Accent color for the section header").addColorPicker((picker) => {
       picker.setValue(this.bucket.color).onChange(async (value) => {
         this.bucket.color = value;
@@ -1174,7 +1226,8 @@ var DocketSettingTab = class extends import_obsidian3.PluginSettingTab {
         icon: "\u{1F4CC}",
         color: "#888888",
         order: maxOrder + 1,
-        showCounter: false
+        showCounter: false,
+        widthPx: 320
       });
       await this.plugin.saveSettings();
       this.display();
@@ -1464,6 +1517,9 @@ var DocketPlugin = class extends import_obsidian4.Plugin {
       this.settings.buckets.forEach((bucket) => {
         if (bucket.showCounter === void 0) {
           bucket.showCounter = bucket.id === "waiting";
+        }
+        if (bucket.widthPx === void 0) {
+          bucket.widthPx = 320;
         }
       });
     }

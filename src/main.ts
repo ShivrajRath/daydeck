@@ -120,6 +120,9 @@ export default class DocketPlugin extends Plugin {
         if (bucket.showCounter === undefined) {
           bucket.showCounter = bucket.id === 'waiting';
         }
+        if (bucket.widthPx === undefined) {
+          bucket.widthPx = 320;
+        }
       });
     }
     if (!Array.isArray(this.settings.tags) || this.settings.tags.length === 0) {

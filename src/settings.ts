@@ -58,6 +58,7 @@ export class DocketSettingTab extends PluginSettingTab {
         color: '#888888',
         order: maxOrder + 1,
         showCounter: false,
+        widthPx: 320,
       });
       await this.plugin.saveSettings();
       this.display();

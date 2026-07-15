@@ -53,6 +53,8 @@ export interface Bucket {
   order: number;
   /** Whether to show waiting time counter for tasks in this section */
   showCounter: boolean;
+  /** Dashboard section width in pixels */
+  widthPx: number;
 }
 
 /**
@@ -89,9 +91,9 @@ export interface DocketSettings {
 
 /** Default buckets matching the prototype design */
 export const DEFAULT_BUCKETS: Bucket[] = [
-  { id: 'today', name: 'Today', icon: '🔥', color: '#f14c4c', order: 0, showCounter: false },
-  { id: 'next', name: 'Next', icon: '⏭️', color: '#d7ba7d', order: 1, showCounter: false },
-  { id: 'waiting', name: 'Waiting', icon: '🤝', color: '#c586c0', order: 2, showCounter: true },
+  { id: 'today', name: 'Today', icon: '🔥', color: '#f14c4c', order: 0, showCounter: false, widthPx: 320 },
+  { id: 'next', name: 'Next', icon: '⏭️', color: '#d7ba7d', order: 1, showCounter: false, widthPx: 320 },
+  { id: 'waiting', name: 'Waiting', icon: '🤝', color: '#c586c0', order: 2, showCounter: true, widthPx: 320 },
   {
     id: 'focus-hub',
     name: 'Focus Hub',
@@ -99,10 +101,11 @@ export const DEFAULT_BUCKETS: Bucket[] = [
     color: '#b4befe',
     order: 3,
     showCounter: false,
+    widthPx: 320,
   },
-  { id: 'learning', name: 'Learning', icon: '📚', color: '#4ec9b0', order: 4, showCounter: false },
-  { id: 'ideas', name: 'Ideas', icon: '💡', color: '#ce9178', order: 5, showCounter: false },
-  { id: 'watch', name: 'Watch', icon: '🔍', color: '#4fc1ff', order: 6, showCounter: false },
+  { id: 'learning', name: 'Learning', icon: '📚', color: '#4ec9b0', order: 4, showCounter: false, widthPx: 320 },
+  { id: 'ideas', name: 'Ideas', icon: '💡', color: '#ce9178', order: 5, showCounter: false, widthPx: 320 },
+  { id: 'watch', name: 'Watch', icon: '🔍', color: '#4fc1ff', order: 6, showCounter: false, widthPx: 320 },
 ];
 
 /** Default semantic tags */

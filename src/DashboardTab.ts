@@ -51,6 +51,7 @@ export class DashboardTab {
         color: '#888888',
         order: maxOrder + 1,
         showCounter: false,
+        widthPx: 320,
       });
       await this.plugin.saveSettings();
     });
@@ -62,6 +63,16 @@ export class DashboardTab {
     const bucketEl = parent.createDiv('docket-bucket');
     bucketEl.dataset.bucketId = bucket.id;
     bucketEl.style.setProperty('--docket-bucket-color', bucket.color);
+    const widthPx = Math.max(240, Math.min(900, bucket.widthPx ?? 320));
+    bucketEl.style.setProperty('--docket-bucket-width', `${widthPx}px`);
+    bucketEl.style.width = `${widthPx}px`;
+
+    const resizeHandle = bucketEl.createDiv('docket-bucket-resize-handle');
+    resizeHandle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.startBucketResize(bucket, bucketEl, e);
+    });
 
     const header = bucketEl.createDiv('docket-bucket-header');
     header.draggable = true;
@@ -139,6 +150,39 @@ export class DashboardTab {
         rightActions.querySelector('.docket-bucket-count') as HTMLElement,
       );
     });
+  }
+
+  private startBucketResize(bucket: Bucket, bucketEl: HTMLElement, event: PointerEvent): void {
+    const startX = event.clientX;
+    const startWidth = bucket.widthPx ?? 320;
+    const minWidth = 240;
+    const maxWidth = 900;
+
+    bucketEl.addClass('is-resizing');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const nextWidth = Math.max(
+        minWidth,
+        Math.min(maxWidth, startWidth + (moveEvent.clientX - startX)),
+      );
+      bucket.widthPx = nextWidth;
+      bucketEl.style.setProperty('--docket-bucket-width', `${nextWidth}px`);
+      bucketEl.style.width = `${nextWidth}px`;
+    };
+
+    const finish = async () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', finish);
+      bucketEl.removeClass('is-resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      await this.plugin.saveSettings(true);
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', finish, { once: true });
   }
 
   private showBucketEditModal(bucket: Bucket): void {
@@ -802,6 +846,22 @@ class BucketEditModal extends Modal {
         await this.plugin.saveSettings();
       });
     });
+
+    new Setting(contentEl)
+      .setName('Width')
+      .setDesc('Section width in pixels')
+      .addText((text) => {
+        text.inputEl.type = 'number';
+        text.inputEl.min = '240';
+        text.inputEl.max = '900';
+        text.setValue(String(this.bucket.widthPx ?? 320)).onChange(async (value) => {
+          const parsed = Number.parseInt(value, 10);
+          this.bucket.widthPx = Number.isFinite(parsed)
+            ? Math.min(900, Math.max(240, parsed))
+            : 320;
+          await this.plugin.saveSettings();
+        });
+      });
 
     new Setting(contentEl)
       .setName('Color')
