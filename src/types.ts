@@ -96,7 +96,7 @@ export const DEFAULT_BUCKETS: Bucket[] = [
   { id: 'waiting', name: 'Waiting', icon: '🤝', color: '#c586c0', order: 2, showCounter: true, widthPx: 320 },
   {
     id: 'focus-hub',
-    name: 'Focus Hub',
+    name: 'Deep Work',
     icon: '🧠',
     color: '#b4befe',
     order: 3,
@@ -110,11 +110,16 @@ export const DEFAULT_BUCKETS: Bucket[] = [
 
 /** Default semantic tags */
 export const DEFAULT_TAGS: Tag[] = [
-  { id: 'deep-work', name: 'DeepWork', color: '#f14c4c' },
-  { id: 'architecture', name: 'Architecture', color: '#c586c0' },
-  { id: 'data', name: 'Data', color: '#4ec9b0' },
+  { id: 'focus', name: 'Focus', color: '#f14c4c' },
+  { id: 'ops', name: 'Ops', color: '#4ec9b0' },
+  { id: 'sync', name: 'Sync', color: '#c586c0' },
+  { id: 'rd', name: 'RD', color: '#4fc1ff' },
   { id: 'personal', name: 'Personal', color: '#ce9178' },
-  { id: 'admin', name: 'Admin', color: '#d7ba7d' },
+  { id: 'design', name: 'Design', color: '#d7ba7d' },
+  { id: 'review', name: 'Review', color: '#b5cea8' },
+  { id: 'maintenance', name: 'Maintenance', color: '#f5a97f' },
+  { id: 'idea', name: 'Idea', color: '#eead39' },
+  { id: 'finance', name: 'Finance', color: '#939ab7' },
 ];
 
 /** Full default settings object */
@@ -122,7 +127,7 @@ export const DEFAULT_SETTINGS: DocketSettings = {
   buckets: DEFAULT_BUCKETS,
   tags: DEFAULT_TAGS,
   tasks: [],
-  deepWorkTagId: 'deep-work',
+  deepWorkTagId: 'focus',
   version: 1,
 };
 

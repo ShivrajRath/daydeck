@@ -32,7 +32,7 @@ var DEFAULT_BUCKETS = [
   { id: "waiting", name: "Waiting", icon: "\u{1F91D}", color: "#c586c0", order: 2, showCounter: true, widthPx: 320 },
   {
     id: "focus-hub",
-    name: "Focus Hub",
+    name: "Deep Work",
     icon: "\u{1F9E0}",
     color: "#b4befe",
     order: 3,
@@ -44,17 +44,22 @@ var DEFAULT_BUCKETS = [
   { id: "watch", name: "Watch", icon: "\u{1F50D}", color: "#4fc1ff", order: 6, showCounter: false, widthPx: 320 }
 ];
 var DEFAULT_TAGS = [
-  { id: "deep-work", name: "DeepWork", color: "#f14c4c" },
-  { id: "architecture", name: "Architecture", color: "#c586c0" },
-  { id: "data", name: "Data", color: "#4ec9b0" },
+  { id: "focus", name: "Focus", color: "#f14c4c" },
+  { id: "ops", name: "Ops", color: "#4ec9b0" },
+  { id: "sync", name: "Sync", color: "#c586c0" },
+  { id: "rd", name: "RD", color: "#4fc1ff" },
   { id: "personal", name: "Personal", color: "#ce9178" },
-  { id: "admin", name: "Admin", color: "#d7ba7d" }
+  { id: "design", name: "Design", color: "#d7ba7d" },
+  { id: "review", name: "Review", color: "#b5cea8" },
+  { id: "maintenance", name: "Maintenance", color: "#f5a97f" },
+  { id: "idea", name: "Idea", color: "#eead39" },
+  { id: "finance", name: "Finance", color: "#939ab7" }
 ];
 var DEFAULT_SETTINGS = {
   buckets: DEFAULT_BUCKETS,
   tags: DEFAULT_TAGS,
   tasks: [],
-  deepWorkTagId: "deep-work",
+  deepWorkTagId: "focus",
   version: 1
 };
 function generateId() {
@@ -1017,7 +1022,7 @@ var DocketView = class extends import_obsidian2.ItemView {
     return "Docket";
   }
   getIcon() {
-    return "layout-dashboard";
+    return "folder-kanban";
   }
   async onOpen() {
     this.contentEl.empty();
@@ -1449,7 +1454,7 @@ var DocketPlugin = class extends import_obsidian4.Plugin {
   async onload() {
     await this.loadSettings();
     this.registerView(VIEW_TYPE_DOCKET, (leaf) => new DocketView(leaf, this));
-    this.addRibbonIcon("inbox", "Open Docket", () => {
+    this.addRibbonIcon("folder-kanban", "Open Docket", () => {
       this.activateView();
     });
     this.addCommand({

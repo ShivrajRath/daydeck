@@ -54,7 +54,7 @@ export class DocketView extends ItemView {
   }
 
   getIcon(): string {
-    return 'layout-dashboard';
+    return 'folder-kanban';
   }
 
   async onOpen(): Promise<void> {

@@ -30,7 +30,7 @@ export default class DocketPlugin extends Plugin {
     this.registerView(VIEW_TYPE_DOCKET, (leaf: WorkspaceLeaf) => new DocketView(leaf, this));
 
     // 3. Ribbon icon
-    this.addRibbonIcon('inbox', 'Open Docket', () => {
+    this.addRibbonIcon('folder-kanban', 'Open Docket', () => {
       this.activateView();
     });
 
