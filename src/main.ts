@@ -123,9 +123,6 @@ export default class DocketPlugin extends Plugin {
     if (!Array.isArray(this.settings.tasks)) {
       this.settings.tasks = [];
     }
-    if (typeof this.settings.dailyDumps !== 'object') {
-      this.settings.dailyDumps = {};
-    }
 
     // Automatically ensure the Deep Work tag exists (Bug Bash requirement)
     if (!this.settings.tags.some((t) => t.id === this.settings.deepWorkTagId)) {

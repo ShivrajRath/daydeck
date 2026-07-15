@@ -476,6 +476,7 @@ export class DashboardTab {
     let suggestionBox: HTMLElement | null = null;
     let selectedIndex = -1;
     let filteredTags: Tag[] = [];
+    let hasNavigatedSuggestions = false;
 
     const showSuggestions = (query: string) => {
       if (suggestionBox) suggestionBox.remove();
@@ -517,6 +518,7 @@ export class DashboardTab {
 
         item.addEventListener('mouseover', () => {
           selectedIndex = index;
+          hasNavigatedSuggestions = true;
           updateSuggestionHighlight();
         });
       });
@@ -538,6 +540,7 @@ export class DashboardTab {
         suggestionBox = null;
       }
       selectedIndex = -1;
+      hasNavigatedSuggestions = false;
     };
 
     const getCurrentTagQuery = (): string => {
@@ -549,6 +552,7 @@ export class DashboardTab {
     };
 
     input.addEventListener('input', () => {
+      hasNavigatedSuggestions = false;
       const query = getCurrentTagQuery();
       if (query !== '' || input.value.includes('#')) {
         showSuggestions(query);
@@ -561,17 +565,19 @@ export class DashboardTab {
       if (suggestionBox) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
+          hasNavigatedSuggestions = true;
           selectedIndex = Math.min(selectedIndex + 1, filteredTags.length - 1);
           updateSuggestionHighlight();
           return;
         }
         if (e.key === 'ArrowUp') {
           e.preventDefault();
+          hasNavigatedSuggestions = true;
           selectedIndex = Math.max(selectedIndex - 1, 0);
           updateSuggestionHighlight();
           return;
         }
-        if (e.key === 'Enter' && selectedIndex >= 0) {
+        if (e.key === 'Enter' && hasNavigatedSuggestions && selectedIndex >= 0) {
           e.preventDefault();
           const selectedTag = filteredTags[selectedIndex];
           const cursorPos = input.selectionStart ?? input.value.length;

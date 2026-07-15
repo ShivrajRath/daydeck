@@ -27,8 +27,6 @@ Docket ensures you never lose sight of the big picture while staying focused on 
 
 - **Waiting Time Counters**: Enable time counters on specific sections (like "Waiting") to track how long tasks have been waiting.
 
-- **Daily Dump**: A dedicated scratchpad for "brain dumping" without breaking your flow. Features markdown preview, debounced auto-save, and optional sync to Obsidian Daily Notes or Periodic Notes.
-
 - **Archive**: A time-filtered history of completed tasks, grouped by month with search functionality. Restore tasks back to active sections with one click.
 
 ---
@@ -56,7 +54,6 @@ Open the **Docket Settings** tab from the plugin's sidebar menu to customize:
 
 - **Sections**: Rename sections, change icons (emoji support), adjust their order, and enable waiting time counters.
 - **Tags**: Add custom semantic tags and assign colors. The DeepWork tag is automatically created and used for focus filtering.
-- **Daily Notes**: If you have the Daily Notes or Periodic Notes plugin installed, you can sync your Daily Dump content to your daily note.
 
 ---
 
@@ -75,4 +72,3 @@ Open the **Docket Settings** tab from the plugin's sidebar menu to customize:
 | Delete Task     | Click × on card                    | Permanently removes                   |
 | Complete Task   | Click checkbox on card             | Moves to Archive                      |
 | Restore Task    | Click "Restore" in Archive         | Moves back to Today section           |
-| Daily Dump      | Switch to "Daily Dump" tab         | Open scratchpad for date              |

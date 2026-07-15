@@ -146,38 +146,42 @@
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-  padding: 10px 20px;
-  background-color: var(--background-primary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  padding: 12px 16px;
+  margin: 10px 16px 0;
+  background-color: transparent;
+  border: none;
+  border-radius: 12px;
   flex-shrink: 0;
   transition: opacity 0.2s, max-height 0.2s;
+  box-shadow: none;
 }
 
 .docket-quick-capture.is-hidden {
   display: none;
 }
 
+.docket-qc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .docket-qc-input-wrapper {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 7px;
-  padding: 0 14px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  flex: 1 1 260px;
+  min-width: 180px;
+  background-color: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 0 6px;
+  transition: none;
 }
 
 .docket-qc-input-wrapper:focus-within {
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 0 122 255) / 0.15);
-}
-
-.docket-qc-icon {
-  font-size: 14px;
-  opacity: 0.5;
-  flex-shrink: 0;
+  box-shadow: none;
 }
 
 .docket-qc-input {
@@ -185,7 +189,7 @@
   background: transparent;
   border: none;
   outline: none;
-  padding: 9px 0;
+  padding: 10px 6px;
   font-size: 13.5px;
   color: var(--text-normal);
   min-width: 0;
@@ -199,6 +203,8 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  flex: 1 1 240px;
+  min-width: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
@@ -215,7 +221,7 @@
   border-radius: 12px;
   cursor: pointer;
   border: 1px solid var(--background-modifier-border);
-  background-color: var(--background-secondary);
+  background-color: transparent;
   color: var(--text-muted);
   white-space: nowrap;
   transition: all 0.15s;
@@ -233,7 +239,7 @@
   border-color: var(--docket-pill-color, var(--interactive-accent));
   background-color: color-mix(
     in srgb,
-    var(--docket-pill-color, var(--interactive-accent)) 12%,
+    var(--docket-pill-color, var(--interactive-accent)) 6%,
     transparent
   );
   display: inline-flex;
@@ -316,8 +322,17 @@
    ============================================================================= */
 
 .docket-bucket {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
+  background-color: color-mix(
+    in srgb,
+    var(--docket-bucket-color, var(--background-modifier-border)) 4%,
+    var(--background-secondary)
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--docket-bucket-color, var(--background-modifier-border)) 18%,
+      var(--background-modifier-border)
+    );
   border-top: 2px solid var(--docket-bucket-color, var(--background-modifier-border));
   border-radius: 8px;
   display: flex;
@@ -341,8 +356,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 9px 14px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background-color: rgba(var(--mono-rgb-0, 0 0 0) / 0.02);
+  border-bottom: 1px solid
+    color-mix(
+      in srgb,
+      var(--docket-bucket-color, var(--background-modifier-border)) 16%,
+      var(--background-modifier-border)
+    );
+  background-color: color-mix(
+    in srgb,
+    var(--docket-bucket-color, var(--background-modifier-border)) 6%,
+    var(--background-secondary)
+  );
   cursor: grab;
   flex-shrink: 0;
   gap: 8px;

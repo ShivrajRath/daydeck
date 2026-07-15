@@ -79,8 +79,6 @@ export interface DocketSettings {
   tasks: Task[];
   /** Tag ID that identifies "deep work" tasks for Focus Mode */
   deepWorkTagId: ID;
-  /** Daily scratchpad content keyed by YYYY-MM-DD date strings */
-  dailyDumps: Record<string, string>;
   /** Schema version for future data migrations */
   version: number;
 }
@@ -122,7 +120,6 @@ export const DEFAULT_SETTINGS: DocketSettings = {
   tags: DEFAULT_TAGS,
   tasks: [],
   deepWorkTagId: 'deep-work',
-  dailyDumps: {},
   version: 1,
 };
 

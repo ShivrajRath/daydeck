@@ -3,8 +3,9 @@
   "name": "Docket",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "A cognitive task management dashboard with semantic tagging, focus modes, and frictionless capture.",
+  "description": "A task manager for organizing your work.",
   "author": "Docket",
   "authorUrl": "https://github.com/ShivrajRath/docket",
+  "fundingUrl": "https://ko-fi.com/raths",
   "isDesktopOnly": false
 }

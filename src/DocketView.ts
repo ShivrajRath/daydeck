@@ -4,19 +4,18 @@
  * Responsibilities:
  *  - Render the top navigation bar (tabs)
  *  - Render the Quick Capture bar (Dashboard only)
- *  - Route between Dashboard, Daily Dump, and Archive tab panels
+ *  - Route between Dashboard and Archive tab panels
  *  - Coordinate cross-cutting concerns: tag filtering, quick capture
  */
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import DocketPlugin from './main';
 import { DashboardTab } from './DashboardTab';
-import { DailyDumpTab } from './DailyDumpTab';
 import { ArchiveTab } from './ArchiveTab';
 
 export const VIEW_TYPE_DOCKET = 'docket-view';
 
-type TabName = 'dashboard' | 'daily-dump' | 'archive';
+type TabName = 'dashboard' | 'archive';
 
 export class DocketView extends ItemView {
   private plugin: DocketPlugin;
@@ -27,7 +26,6 @@ export class DocketView extends ItemView {
 
   // Tab instances (lazily initialised on first render)
   private dashboardTab!: DashboardTab;
-  private dailyDumpTab!: DailyDumpTab;
   private archiveTab!: ArchiveTab;
 
   // DOM refs
@@ -36,7 +34,6 @@ export class DocketView extends ItemView {
   private quickCaptureInput!: HTMLInputElement;
   private tagPillsContainer!: HTMLElement;
   private dashboardPanel!: HTMLElement;
-  private dailyDumpPanel!: HTMLElement;
   private archivePanel!: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf, plugin: DocketPlugin) {
@@ -90,7 +87,6 @@ export class DocketView extends ItemView {
     const tabGroup = navLeft.createDiv('docket-tab-group');
     const tabs: Array<{ id: TabName; label: string }> = [
       { id: 'dashboard', label: 'Dashboard' },
-      { id: 'daily-dump', label: 'Daily Dump' },
       { id: 'archive', label: 'Archive' },
     ];
 
@@ -108,8 +104,8 @@ export class DocketView extends ItemView {
   private buildQuickCapture(): void {
     this.quickCaptureEl = this.contentEl.createDiv('docket-quick-capture');
 
-    const inputWrapper = this.quickCaptureEl.createDiv('docket-qc-input-wrapper');
-    inputWrapper.createSpan({ cls: 'docket-qc-icon', text: '⚡' });
+    const row = this.quickCaptureEl.createDiv('docket-qc-row');
+    const inputWrapper = row.createDiv('docket-qc-input-wrapper');
 
     this.quickCaptureInput = inputWrapper.createEl('input', {
       cls: 'docket-qc-input',
@@ -119,7 +115,7 @@ export class DocketView extends ItemView {
       },
     });
 
-    this.tagPillsContainer = this.quickCaptureEl.createDiv('docket-qc-tag-filters');
+    this.tagPillsContainer = row.createDiv('docket-qc-tag-filters');
     this.renderTagPills();
 
     this.quickCaptureInput.addEventListener('input', () => {
@@ -137,7 +133,7 @@ export class DocketView extends ItemView {
   }
 
   // -------------------------------------------------------------------------
-  // Build: Content area with three tab panels
+  // Build: Content area with two tab panels
   // -------------------------------------------------------------------------
 
   private buildContent(): void {
@@ -148,12 +144,6 @@ export class DocketView extends ItemView {
       attr: { 'data-panel': 'dashboard' },
     });
     this.dashboardTab = new DashboardTab(this.dashboardPanel, this.plugin);
-
-    this.dailyDumpPanel = contentArea.createDiv({
-      cls: 'docket-tab-panel',
-      attr: { 'data-panel': 'daily-dump' },
-    });
-    this.dailyDumpTab = new DailyDumpTab(this.dailyDumpPanel, this.plugin);
 
     this.archivePanel = contentArea.createDiv({
       cls: 'docket-tab-panel',
@@ -175,7 +165,7 @@ export class DocketView extends ItemView {
 
     this.quickCaptureEl.classList.toggle('is-hidden', tab !== 'dashboard');
 
-    [this.dashboardPanel, this.dailyDumpPanel, this.archivePanel].forEach((p) => {
+    [this.dashboardPanel, this.archivePanel].forEach((p) => {
       p.classList.remove('is-active');
     });
 
@@ -186,11 +176,6 @@ export class DocketView extends ItemView {
         if (this.activeTagFilters.length > 0) {
           this.dashboardTab.applyTagFilter(this.activeTagFilters);
         }
-        break;
-
-      case 'daily-dump':
-        this.dailyDumpPanel.classList.add('is-active');
-        this.dailyDumpTab.render();
         break;
 
       case 'archive':
