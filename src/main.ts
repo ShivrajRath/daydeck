@@ -8,14 +8,15 @@
  *  - Load / save settings via Obsidian's built-in data API
  */
 
-import { Plugin, WorkspaceLeaf } from 'obsidian';
-import { DocketSettings, DEFAULT_SETTINGS, normalizeBucketOrder } from './types';
+import { Notice, Plugin, WorkspaceLeaf } from 'obsidian';
+import { DocketSettings, DEFAULT_SETTINGS, normalizeBucketOrder, Task } from './types';
 import { DocketView, VIEW_TYPE_DOCKET } from './DocketView';
 import { DocketSettingTab } from './settings';
 
 export default class DocketPlugin extends Plugin {
   /** Live settings object — mutate then call saveSettings() to persist */
   settings!: DocketSettings;
+  private reminderIntervalId?: number;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -45,12 +46,16 @@ export default class DocketPlugin extends Plugin {
     // 5. Settings tab
     this.addSettingTab(new DocketSettingTab(this.app, this));
 
+    // 6. Reminder monitor
+    this.startReminderMonitor();
+
     console.log('Docket: plugin loaded');
   }
 
   onunload(): void {
     // Detach all open Docket leaves when plugin is disabled
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_DOCKET);
+    this.stopReminderMonitor();
     console.log('Docket: plugin unloaded');
   }
 
@@ -132,6 +137,66 @@ export default class DocketPlugin extends Plugin {
         color: '#f14c4c',
       });
     }
+  }
+
+  private startReminderMonitor(): void {
+    this.stopReminderMonitor();
+    this.reminderIntervalId = window.setInterval(() => {
+      void this.processDueReminders();
+    }, 10000);
+    this.registerInterval(this.reminderIntervalId);
+    void this.processDueReminders();
+  }
+
+  private stopReminderMonitor(): void {
+    if (this.reminderIntervalId !== undefined) {
+      window.clearInterval(this.reminderIntervalId);
+      this.reminderIntervalId = undefined;
+    }
+  }
+
+  private async processDueReminders(): Promise<void> {
+    const now = Date.now();
+    let changed = false;
+
+    for (const task of this.settings.tasks) {
+      if (!task.reminderAt || task.isCompleted || task.reminderAt > now) {
+        continue;
+      }
+
+      this.showReminderNotification(task);
+      task.reminderAt = undefined;
+      changed = true;
+    }
+
+    if (changed) {
+      await this.saveSettings(true);
+    }
+  }
+
+  private showReminderNotification(task: Task): void {
+    const title = 'Docket reminder';
+    const body = task.text;
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (window.Notification.permission === 'granted') {
+        new window.Notification(title, { body, tag: `docket-reminder-${task.id}` });
+        return;
+      }
+
+      if (window.Notification.permission === 'default') {
+        window.Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            new window.Notification(title, { body, tag: `docket-reminder-${task.id}` });
+          } else {
+            new Notice(`${title}: ${body}`);
+          }
+        });
+        return;
+      }
+    }
+
+    new Notice(`${title}: ${body}`);
   }
 
   /**
