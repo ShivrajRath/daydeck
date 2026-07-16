@@ -1447,8 +1447,10 @@ var DayDeckSettingTab = class extends import_obsidian4.PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
-  getSettingDefinitions() {
-    return [];
+  display() {
+    this.containerEl.empty();
+    this.renderBucketsSection(this.containerEl);
+    this.renderTagsSection(this.containerEl);
   }
   renderBucketsSection(parent) {
     const section = parent.createDiv("docket-settings-section");
@@ -1472,7 +1474,7 @@ var DayDeckSettingTab = class extends import_obsidian4.PluginSettingTab {
         widthPx: 320
       });
       void this.plugin.saveSettings();
-      this.update();
+      this.display();
     });
   }
   renderBucketRows(container) {
@@ -1547,7 +1549,7 @@ var DayDeckSettingTab = class extends import_obsidian4.PluginSettingTab {
           const prev = sorted[index - 1];
           [bucket.order, prev.order] = [prev.order, bucket.order];
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         });
       }
       const downBtn = actCell.createEl("button", {
@@ -1562,7 +1564,7 @@ var DayDeckSettingTab = class extends import_obsidian4.PluginSettingTab {
           const next = sorted[index + 1];
           [bucket.order, next.order] = [next.order, bucket.order];
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         });
       }
       const delBtn = actCell.createEl("button", {
@@ -1579,7 +1581,7 @@ Tasks inside will remain but won't appear on the Dashboard until assigned to ano
           );
           normalizeBucketOrder(this.plugin.settings.buckets);
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         }).open();
       });
     });
@@ -1601,7 +1603,7 @@ Tasks inside will remain but won't appear on the Dashboard until assigned to ano
         color: "#888888"
       });
       void this.plugin.saveSettings();
-      this.update();
+      this.display();
     });
   }
   renderTagRows(container) {
@@ -1670,7 +1672,7 @@ It will be removed from all tasks.`, () => {
             this.plugin.settings.deepWorkTagId = (_b = (_a = this.plugin.settings.tags[0]) == null ? void 0 : _a.id) != null ? _b : "";
           }
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         }).open();
       });
     });

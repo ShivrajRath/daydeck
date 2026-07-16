@@ -4,7 +4,7 @@
  * Provides full CRUD UI for Buckets and Tags.
  */
 
-import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from 'obsidian';
+import { App, PluginSettingTab, Setting } from 'obsidian';
 import DayDeckPlugin from './main';
 import { generateId, normalizeBucketOrder } from './types';
 import { ConfirmModal } from './ConfirmModal';
@@ -17,9 +17,6 @@ export class DayDeckSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  getSettingDefinitions(): SettingDefinitionItem[] {
-    return [];
-  }
 
   display(): void {
     this.containerEl.empty();
@@ -52,7 +49,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         widthPx: 320,
       });
       void this.plugin.saveSettings();
-      this.update();
+      this.display();
     });
   }
 
@@ -140,7 +137,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
           const prev = sorted[index - 1];
           [bucket.order, prev.order] = [prev.order, bucket.order];
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         });
       }
 
@@ -156,7 +153,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
           const next = sorted[index + 1];
           [bucket.order, next.order] = [next.order, bucket.order];
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         });
       }
 
@@ -172,7 +169,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
           );
           normalizeBucketOrder(this.plugin.settings.buckets);
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         }).open();
       });
     });
@@ -198,7 +195,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         color: '#888888',
       });
       void this.plugin.saveSettings();
-      this.update();
+      this.display();
     });
   }
 
@@ -274,7 +271,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
             this.plugin.settings.deepWorkTagId = this.plugin.settings.tags[0]?.id ?? '';
           }
           void this.plugin.saveSettings();
-          this.update();
+          this.display();
         }).open();
       });
     });
