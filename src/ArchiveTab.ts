@@ -42,7 +42,7 @@ export class ArchiveTab {
 
   private renderHeader(parent: HTMLElement): void {
     const header = parent.createDiv('docket-archive-header');
-    header.createEl('h2', { text: '📦 Archive Log' });
+    header.createEl('h2', { text: '📦 Archive log' });
     header.createSpan({
       cls: 'docket-archive-subtitle',
       text: 'A historical ledger of completed tasks.',
@@ -63,7 +63,7 @@ export class ArchiveTab {
     const searchInput = searchWrapper.createEl('input', {
       cls: 'docket-archive-search',
       attr: { type: 'text', placeholder: 'Search completed tasks…' },
-    }) as HTMLInputElement;
+    });
     searchInput.value = this.searchQuery;
 
     // Stats
@@ -136,7 +136,7 @@ export class ArchiveTab {
     // Colour indicator from first tag
     const firstTag = task.tags.length > 0 ? tags.find((t) => t.id === task.tags[0]) : null;
     if (firstTag) {
-      card.style.setProperty('--docket-indicator-color', firstTag.color);
+      card.setCssProps({ '--docket-indicator-color': firstTag.color });
       card.addClass('has-indicator');
     }
 
@@ -147,7 +147,7 @@ export class ArchiveTab {
     const checkbox = taskMain.createEl('input', {
       cls: 'docket-task-checkbox',
       attr: { type: 'checkbox' },
-    }) as HTMLInputElement;
+    });
     checkbox.checked = true;
     checkbox.disabled = true;
 
@@ -178,7 +178,7 @@ export class ArchiveTab {
         const tag = tags.find((t) => t.id === tagId);
         if (!tag) return;
         const pill = meta.createSpan({ cls: 'docket-inline-tag', text: `#${tag.name}` });
-        pill.style.setProperty('--docket-tag-color', tag.color);
+        pill.setCssProps({ '--docket-tag-color': tag.color });
       });
 
       if (task.completedAt) {

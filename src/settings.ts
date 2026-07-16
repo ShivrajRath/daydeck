@@ -4,9 +4,10 @@
  * Provides full CRUD UI for Buckets and Tags.
  */
 
-import { App, PluginSettingTab } from 'obsidian';
+import { App, PluginSettingTab, Setting, type SettingDefinitionItem } from 'obsidian';
 import DayDeckPlugin from './main';
 import { generateId, normalizeBucketOrder } from './types';
+import { ConfirmModal } from './ConfirmModal';
 
 export class DayDeckSettingTab extends PluginSettingTab {
   plugin: DayDeckPlugin;
@@ -16,44 +17,29 @@ export class DayDeckSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.addClass('docket-settings');
-
-    const header = containerEl.createDiv('docket-settings-header');
-    header.createEl('h2', { text: '🗂️ DayDeck' });
-    header.createEl('p', {
-      cls: 'docket-settings-intro',
-      text: 'Configure your task containers and semantic tags. Changes apply immediately.',
-    });
-
-    this.renderBucketsSection(containerEl);
-    this.renderTagsSection(containerEl);
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [];
   }
+
 
   private renderBucketsSection(parent: HTMLElement): void {
     const section = parent.createDiv('docket-settings-section');
 
     const sh = section.createDiv('docket-settings-section-header');
-    sh.createEl('h3', { text: 'Sections' });
-    sh.createEl('p', {
-      cls: 'docket-settings-desc',
-      text: 'Task containers displayed on the Dashboard. You can also edit icon and color directly from the dashboard.',
-    });
+    new Setting(sh).setName('Sections').setHeading().setDesc('Task containers displayed on the Dashboard. You can also edit icon and color directly from the dashboard.');
 
     const tableWrapper = section.createDiv('docket-settings-table-wrapper');
     this.renderBucketRows(tableWrapper);
 
     const addBtn = section.createEl('button', {
       cls: 'mod-cta docket-add-btn',
-      text: '+ Add Section',
+      text: '+ Add section',
     });
     addBtn.addEventListener('click', async () => {
       const maxOrder = this.plugin.settings.buckets.reduce((max, b) => Math.max(max, b.order), -1);
       this.plugin.settings.buckets.push({
         id: generateId(),
-        name: 'New Section',
+        name: 'New section',
         icon: '📌',
         color: '#888888',
         order: maxOrder + 1,
@@ -61,7 +47,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         widthPx: 320,
       });
       await this.plugin.saveSettings();
-      this.display();
+      this.update();
     });
   }
 
@@ -112,7 +98,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
       const colorCell = row.createDiv('docket-settings-cell');
       const colorWrapper = colorCell.createDiv('docket-color-input-wrapper');
       const colorSwatch = colorWrapper.createDiv('docket-color-swatch');
-      colorSwatch.style.backgroundColor = bucket.color;
+      colorSwatch.setCssStyles({ backgroundColor: bucket.color });
 
       const colorInput = colorWrapper.createEl('input', {
         cls: 'docket-settings-color-input',
@@ -120,7 +106,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
       });
       colorInput.addEventListener('input', async () => {
         bucket.color = colorInput.value;
-        colorSwatch.style.backgroundColor = bucket.color;
+        colorSwatch.setCssStyles({ backgroundColor: bucket.color });
         await this.plugin.saveSettings();
       });
 
@@ -128,7 +114,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
       const counterCheckbox = counterCell.createEl('input', {
         cls: 'docket-settings-checkbox',
         attr: { type: 'checkbox' },
-      }) as HTMLInputElement;
+      });
       counterCheckbox.checked = bucket.showCounter;
       counterCheckbox.addEventListener('change', async () => {
         bucket.showCounter = counterCheckbox.checked;
@@ -141,7 +127,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         cls: 'docket-icon-btn',
         attr: { title: 'Move up' },
       });
-      upBtn.createEl('span', { text: '↑' });
+      upBtn.createSpan({ text: '↑' });
       if (index === 0) {
         upBtn.disabled = true;
       } else {
@@ -149,7 +135,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
           const prev = sorted[index - 1];
           [bucket.order, prev.order] = [prev.order, bucket.order];
           await this.plugin.saveSettings();
-          this.display();
+          this.update();
         });
       }
 
@@ -157,7 +143,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         cls: 'docket-icon-btn',
         attr: { title: 'Move down' },
       });
-      downBtn.createEl('span', { text: '↓' });
+      downBtn.createSpan({ text: '↓' });
       if (index === sorted.length - 1) {
         downBtn.disabled = true;
       } else {
@@ -165,7 +151,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
           const next = sorted[index + 1];
           [bucket.order, next.order] = [next.order, bucket.order];
           await this.plugin.saveSettings();
-          this.display();
+          this.update();
         });
       }
 
@@ -174,20 +160,15 @@ export class DayDeckSettingTab extends PluginSettingTab {
         attr: { title: `Delete "${bucket.name}" (tasks are preserved)` },
         text: 'Delete',
       });
-      delBtn.addEventListener('click', async () => {
-        if (
-          !confirm(
-            `Delete section "${bucket.name}"?\n\nTasks inside will remain but won't appear on the Dashboard until assigned to another section.`,
-          )
-        ) {
-          return;
-        }
-        this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
-          (b) => b.id !== bucket.id,
-        );
-        normalizeBucketOrder(this.plugin.settings.buckets);
-        await this.plugin.saveSettings();
-        this.display();
+      delBtn.addEventListener('click', () => {
+        new ConfirmModal(this.plugin.app, `Delete section "${bucket.name}"?\n\nTasks inside will remain but won't appear on the Dashboard until assigned to another section.`, async () => {
+          this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
+            (b) => b.id !== bucket.id,
+          );
+          normalizeBucketOrder(this.plugin.settings.buckets);
+          await this.plugin.saveSettings();
+          this.update();
+        }).open();
       });
     });
   }
@@ -196,18 +177,14 @@ export class DayDeckSettingTab extends PluginSettingTab {
     const section = parent.createDiv('docket-settings-section');
 
     const sh = section.createDiv('docket-settings-section-header');
-    sh.createEl('h3', { text: 'Semantic Tags' });
-    sh.createEl('p', {
-      cls: 'docket-settings-desc',
-      text: 'Tags categorize tasks and enable filtering. Use #TagName syntax when creating tasks. The DeepWork tag is the default deep work tag.',
-    });
+    new Setting(sh).setName('Semantic tags').setHeading().setDesc('Tags categorize tasks and enable filtering. Use #TagName syntax when creating tasks. The DeepWork tag is the default deep work tag.');
 
     const tableWrapper = section.createDiv('docket-settings-table-wrapper');
     this.renderTagRows(tableWrapper);
 
     const addBtn = section.createEl('button', {
       cls: 'mod-cta docket-add-btn',
-      text: '+ Add Tag',
+      text: '+ Add tag',
     });
     addBtn.addEventListener('click', async () => {
       this.plugin.settings.tags.push({
@@ -216,7 +193,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         color: '#888888',
       });
       await this.plugin.saveSettings();
-      this.display();
+      this.update();
     });
   }
 
@@ -256,7 +233,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
       const colorCell = row.createDiv('docket-settings-cell');
       const colorWrapper = colorCell.createDiv('docket-color-input-wrapper');
       const colorSwatch = colorWrapper.createDiv('docket-color-swatch');
-      colorSwatch.style.backgroundColor = tag.color;
+      colorSwatch.setCssStyles({ backgroundColor: tag.color });
 
       const colorInput = colorWrapper.createEl('input', {
         cls: 'docket-settings-color-input',
@@ -264,8 +241,8 @@ export class DayDeckSettingTab extends PluginSettingTab {
       });
       colorInput.addEventListener('input', async () => {
         tag.color = colorInput.value;
-        colorSwatch.style.backgroundColor = tag.color;
-        previewPill.style.setProperty('--docket-tag-color', tag.color);
+        colorSwatch.setCssStyles({ backgroundColor: tag.color });
+        previewPill.setCssProps({ '--docket-tag-color': tag.color });
         await this.plugin.saveSettings();
       });
 
@@ -274,7 +251,7 @@ export class DayDeckSettingTab extends PluginSettingTab {
         cls: 'docket-inline-tag',
         text: `#${tag.name}`,
       });
-      previewPill.style.setProperty('--docket-tag-color', tag.color);
+      previewPill.setCssProps({ '--docket-tag-color': tag.color });
 
       const actCell = row.createDiv('docket-settings-cell');
       const delBtn = actCell.createEl('button', {
@@ -282,17 +259,18 @@ export class DayDeckSettingTab extends PluginSettingTab {
         text: 'Delete',
         attr: { title: `Delete #${tag.name} (removed from all tasks)` },
       });
-      delBtn.addEventListener('click', async () => {
-        if (!confirm(`Delete tag #${tag.name}?\n\nIt will be removed from all tasks.`)) return;
-        this.plugin.settings.tags = this.plugin.settings.tags.filter((t) => t.id !== tag.id);
-        this.plugin.settings.tasks.forEach((task) => {
-          task.tags = task.tags.filter((id) => id !== tag.id);
-        });
-        if (this.plugin.settings.deepWorkTagId === tag.id) {
-          this.plugin.settings.deepWorkTagId = this.plugin.settings.tags[0]?.id ?? '';
-        }
-        await this.plugin.saveSettings();
-        this.display();
+      delBtn.addEventListener('click', () => {
+        new ConfirmModal(this.plugin.app, `Delete tag #${tag.name}?\n\nIt will be removed from all tasks.`, async () => {
+          this.plugin.settings.tags = this.plugin.settings.tags.filter((t) => t.id !== tag.id);
+          this.plugin.settings.tasks.forEach((task) => {
+            task.tags = task.tags.filter((id) => id !== tag.id);
+          });
+          if (this.plugin.settings.deepWorkTagId === tag.id) {
+            this.plugin.settings.deepWorkTagId = this.plugin.settings.tags[0]?.id ?? '';
+          }
+          await this.plugin.saveSettings();
+          this.update();
+        }).open();
       });
     });
   }

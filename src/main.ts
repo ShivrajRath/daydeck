@@ -31,15 +31,15 @@ export default class DayDeckPlugin extends Plugin {
 
     // 3. Ribbon icon
     this.addRibbonIcon('folder-kanban', 'Open DayDeck', () => {
-      this.activateView();
+      void this.activateView();
     });
 
     // 4. Command palette entry
     this.addCommand({
-      id: 'open-daydeck',
-      name: 'Open DayDeck dashboard',
+      id: 'open-dashboard',
+      name: 'Open dashboard',
       callback: () => {
-        this.activateView();
+        void this.activateView();
       },
     });
 
@@ -48,15 +48,10 @@ export default class DayDeckPlugin extends Plugin {
 
     // 6. Reminder monitor
     this.startReminderMonitor();
-
-    console.log('DayDeck: plugin loaded');
   }
 
   onunload(): void {
-    // Detach all open DayDeck leaves when plugin is disabled
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_DAYDECK);
     this.stopReminderMonitor();
-    console.log('DayDeck: plugin unloaded');
   }
 
   // -------------------------------------------------------------------------
@@ -74,14 +69,14 @@ export default class DayDeckPlugin extends Plugin {
     // Check if already open
     const existing = workspace.getLeavesOfType(VIEW_TYPE_DAYDECK);
     if (existing.length > 0) {
-      workspace.revealLeaf(existing[0]);
+      workspace.setActiveLeaf(existing[0]);
       return;
     }
 
     // Open in a new tab
     const leaf = workspace.getLeaf('tab');
     await leaf.setViewState({ type: VIEW_TYPE_DAYDECK, active: true });
-    workspace.revealLeaf(leaf);
+    workspace.setActiveLeaf(leaf);
   }
 
   // -------------------------------------------------------------------------
@@ -195,7 +190,7 @@ export default class DayDeckPlugin extends Plugin {
       }
 
       if (window.Notification.permission === 'default') {
-        window.Notification.requestPermission().then((permission) => {
+        void window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
             new window.Notification(title, { body, tag: `daydeck-reminder-${task.id}` });
           } else {

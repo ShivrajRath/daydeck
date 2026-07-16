@@ -69,7 +69,6 @@
   align-items: center;
   gap: 2px;
   overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .docket-tab-group::-webkit-scrollbar {
@@ -207,7 +206,6 @@
   min-width: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .docket-qc-tag-filters::-webkit-scrollbar {
@@ -606,7 +604,7 @@
 
 /* Search filter hidden */
 .docket-task-card.is-search-hidden {
-  display: none !important;
+  display: none;
 }
 
 /* ── Task main row ────────────────────────────────────────────────────────── */
@@ -1409,7 +1407,7 @@
    ============================================================================= */
 
 .docket-settings {
-  padding: 0 !important;
+  padding: 0;
 }
 
 .docket-settings-header {
@@ -1611,7 +1609,6 @@
   .docket-nav-left {
     gap: 10px;
     overflow-x: auto;
-    scrollbar-width: none;
   }
 
   .docket-nav-left::-webkit-scrollbar {
@@ -1714,4 +1711,9 @@
 .docket-scratchpad-editor::-webkit-scrollbar-thumb {
   background-color: var(--background-modifier-border);
   border-radius: 2px;
+}
+
+body.docket-is-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
 }

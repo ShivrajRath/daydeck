@@ -1,5 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-# Run lint-staged to format and lint staged files
-npx --no-install lint-staged
+# Run formatting and linting on staged files
+npx --no-install prettier --write "src/**/*.{ts,tsx,js,jsx,json,css,md}" "*.{json,md,css}" 
+npx --no-install eslint "src/**/*.{ts,tsx,js,jsx}" --fix

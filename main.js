@@ -23,7 +23,7 @@ __export(main_exports, {
   default: () => DayDeckPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 
 // src/types.ts
 var DEFAULT_BUCKETS = [
@@ -217,10 +217,49 @@ function normalizeBucketOrder(buckets) {
 }
 
 // src/DayDeckView.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 
 // src/DashboardTab.ts
+var import_obsidian2 = require("obsidian");
+
+// src/ConfirmModal.ts
 var import_obsidian = require("obsidian");
+var ConfirmModal = class extends import_obsidian.Modal {
+  constructor(app, message, onConfirm, onCancel) {
+    super(app);
+    this.message = message;
+    this.onConfirm = onConfirm;
+    this.onCancel = onCancel;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h2", { text: "Confirm" });
+    const lines = this.message.split("\n");
+    lines.forEach((line) => {
+      contentEl.createEl("p", { text: line });
+    });
+    new import_obsidian.Setting(contentEl).addButton(
+      (btn) => btn.setButtonText("Cancel").onClick(() => {
+        this.close();
+        if (this.onCancel) {
+          this.onCancel();
+        }
+      })
+    ).addButton(
+      (btn) => btn.setButtonText("Confirm").setCta().onClick(() => {
+        this.close();
+        this.onConfirm();
+      })
+    );
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/DashboardTab.ts
 var _draggedTaskId = null;
 var _draggedBucketId = null;
 var DashboardTab = class {
@@ -234,12 +273,12 @@ var DashboardTab = class {
     const grid = inner.createDiv("docket-bucket-grid");
     const sorted = [...this.plugin.settings.buckets].sort((a, b) => a.order - b.order);
     sorted.forEach((bucket) => this.renderBucket(bucket, grid));
-    const addSectionBtn = inner.createDiv({ cls: "docket-add-section-btn", text: "+ Add Section" });
+    const addSectionBtn = inner.createDiv({ cls: "docket-add-section-btn", text: "+ Add section" });
     addSectionBtn.addEventListener("click", async () => {
       const maxOrder = this.plugin.settings.buckets.reduce((max, b) => Math.max(max, b.order), -1);
       this.plugin.settings.buckets.push({
         id: generateId(),
-        name: "New Section",
+        name: "New section",
         icon: "\u{1F4CC}",
         color: "#888888",
         order: maxOrder + 1,
@@ -254,10 +293,10 @@ var DashboardTab = class {
     const tasks = this.getActiveTasks(bucket.id);
     const bucketEl = parent.createDiv("docket-bucket");
     bucketEl.dataset.bucketId = bucket.id;
-    bucketEl.style.setProperty("--docket-bucket-color", bucket.color);
+    bucketEl.setCssProps({ "--docket-bucket-color": bucket.color });
     const widthPx = Math.max(240, Math.min(900, (_a = bucket.widthPx) != null ? _a : 320));
-    bucketEl.style.setProperty("--docket-bucket-width", `${widthPx}px`);
-    bucketEl.style.width = `${widthPx}px`;
+    bucketEl.setCssProps({ "--docket-bucket-width": `${widthPx}px` });
+    bucketEl.setCssStyles({ width: `${widthPx}px` });
     const resizeHandle = bucketEl.createDiv("docket-bucket-resize-handle");
     resizeHandle.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -301,17 +340,16 @@ var DashboardTab = class {
       text: "\u{1F5D1}\uFE0F",
       attr: { title: "Delete section" }
     });
-    delBtn.addEventListener("click", async (e) => {
+    delBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (confirm(
-        `Delete section "${bucket.name}"? Tasks inside will remain but won't appear on the Dashboard.`
-      )) {
+      new ConfirmModal(this.plugin.app, `Delete section "${bucket.name}"?
+Tasks inside will remain but won't appear on the Dashboard.`, async () => {
         this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
           (b) => b.id !== bucket.id
         );
         normalizeBucketOrder(this.plugin.settings.buckets);
         await this.plugin.saveSettings();
-      }
+      }).open();
     });
     this.setupBucketDrag(header, bucketEl, bucket.id);
     const taskList = bucketEl.createDiv("docket-task-list");
@@ -347,23 +385,21 @@ var DashboardTab = class {
     const minWidth = 240;
     const maxWidth = 900;
     bucketEl.addClass("is-resizing");
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+    document.body.addClass("docket-is-resizing");
     const onMove = (moveEvent) => {
       const nextWidth = Math.max(
         minWidth,
         Math.min(maxWidth, startWidth + (moveEvent.clientX - startX))
       );
       bucket.widthPx = nextWidth;
-      bucketEl.style.setProperty("--docket-bucket-width", `${nextWidth}px`);
-      bucketEl.style.width = `${nextWidth}px`;
+      bucketEl.setCssProps({ "--docket-bucket-width": `${nextWidth}px` });
+      bucketEl.setCssStyles({ width: `${nextWidth}px` });
     };
     const finish = async () => {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", finish);
       bucketEl.removeClass("is-resizing");
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
+      document.body.removeClass("docket-is-resizing");
       await this.plugin.saveSettings(true);
     };
     document.addEventListener("pointermove", onMove);
@@ -377,10 +413,12 @@ var DashboardTab = class {
   }
   setupBucketDrag(header, bucketEl, bucketId) {
     header.addEventListener("dragstart", (e) => {
+      const dataTransfer = e.dataTransfer;
+      if (!dataTransfer) return;
       _draggedBucketId = bucketId;
-      e.dataTransfer.setData("application/docket-bucket", bucketId);
-      e.dataTransfer.effectAllowed = "move";
-      setTimeout(() => bucketEl.addClass("docket-bucket-dragging"), 0);
+      dataTransfer.setData("application/docket-bucket", bucketId);
+      dataTransfer.effectAllowed = "move";
+      window.setTimeout(() => bucketEl.addClass("docket-bucket-dragging"), 0);
     });
     header.addEventListener("dragend", () => {
       bucketEl.removeClass("docket-bucket-dragging");
@@ -390,9 +428,10 @@ var DashboardTab = class {
       });
     });
     bucketEl.addEventListener("dragover", (e) => {
-      if (!_draggedBucketId || _draggedBucketId === bucketId) return;
+      const dataTransfer = e.dataTransfer;
+      if (!_draggedBucketId || _draggedBucketId === bucketId || !dataTransfer) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
+      dataTransfer.dropEffect = "move";
       bucketEl.addClass("docket-bucket-drop-target");
     });
     bucketEl.addEventListener("dragleave", (e) => {
@@ -401,9 +440,10 @@ var DashboardTab = class {
       }
     });
     bucketEl.addEventListener("drop", async (e) => {
+      const dataTransfer = e.dataTransfer;
       e.preventDefault();
       bucketEl.removeClass("docket-bucket-drop-target");
-      const sourceId = e.dataTransfer.getData("application/docket-bucket") || _draggedBucketId;
+      const sourceId = (dataTransfer == null ? void 0 : dataTransfer.getData("application/docket-bucket")) || _draggedBucketId;
       if (!sourceId || sourceId === bucketId) return;
       const buckets = [...this.plugin.settings.buckets].sort((a, b) => a.order - b.order);
       const sourceIdx = buckets.findIndex((b) => b.id === sourceId);
@@ -427,7 +467,7 @@ var DashboardTab = class {
     card.draggable = true;
     const firstTag = task.tags.length > 0 ? tags.find((t) => t.id === task.tags[0]) : null;
     if (firstTag) {
-      card.style.setProperty("--docket-indicator-color", firstTag.color);
+      card.setCssProps({ "--docket-indicator-color": firstTag.color });
       card.addClass("has-indicator");
     }
     const taskMain = card.createDiv("docket-task-main");
@@ -444,10 +484,10 @@ var DashboardTab = class {
     const textEl = taskMain.createSpan({ cls: "docket-task-text", text: task.text });
     textEl.addEventListener("dblclick", (e) => {
       e.stopPropagation();
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "docket-task-edit-input";
-      input.value = task.text;
+      const input = taskMain.createEl("input", {
+        cls: "docket-task-edit-input",
+        attr: { type: "text", value: task.text }
+      });
       taskMain.replaceChild(input, textEl);
       input.focus();
       let committed = false;
@@ -519,7 +559,7 @@ var DashboardTab = class {
       const tag = tags.find((t) => t.id === tagId);
       if (!tag) return;
       const pill = metaRow.createSpan({ cls: "docket-inline-tag", text: `#${tag.name}` });
-      pill.style.setProperty("--docket-tag-color", tag.color);
+      pill.setCssProps({ "--docket-tag-color": tag.color });
       const removeTag = pill.createSpan({ cls: "docket-inline-tag-remove", text: "\xD7" });
       removeTag.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -546,10 +586,12 @@ var DashboardTab = class {
       this.showTaskContextMenu(e, task);
     });
     card.addEventListener("dragstart", (e) => {
+      const dataTransfer = e.dataTransfer;
+      if (!dataTransfer) return;
       _draggedTaskId = task.id;
-      e.dataTransfer.setData("text/plain", task.id);
-      e.dataTransfer.effectAllowed = "move";
-      setTimeout(() => card.addClass("docket-dragging"), 0);
+      dataTransfer.setData("text/plain", task.id);
+      dataTransfer.effectAllowed = "move";
+      window.setTimeout(() => card.addClass("docket-dragging"), 0);
     });
     card.addEventListener("dragend", () => {
       card.removeClass("docket-dragging");
@@ -582,9 +624,10 @@ var DashboardTab = class {
   }
   setupDropZone(taskList, bucketId, countEl) {
     taskList.addEventListener("dragover", (e) => {
-      if (_draggedBucketId) return;
+      const dataTransfer = e.dataTransfer;
+      if (_draggedBucketId || !dataTransfer) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
+      dataTransfer.dropEffect = "move";
       taskList.addClass("docket-drag-over");
       this.updateDropIndicator(taskList, e.clientY);
     });
@@ -595,11 +638,12 @@ var DashboardTab = class {
       }
     });
     taskList.addEventListener("drop", async (e) => {
+      const dataTransfer = e.dataTransfer;
       if (_draggedBucketId) return;
       e.preventDefault();
       taskList.removeClass("docket-drag-over");
       this.removeDropIndicator(taskList);
-      const taskId = e.dataTransfer.getData("text/plain") || _draggedTaskId;
+      const taskId = (dataTransfer == null ? void 0 : dataTransfer.getData("text/plain")) || _draggedTaskId;
       if (!taskId) return;
       const task = this.plugin.settings.tasks.find((t) => t.id === taskId);
       if (!task) return;
@@ -633,7 +677,7 @@ var DashboardTab = class {
       taskList.querySelectorAll(".docket-task-card:not(.docket-dragging)")
     );
     const idx = this.getDropIndex(cards, mouseY);
-    const indicator = createEl("div", { cls: "docket-drop-indicator" });
+    const indicator = createDiv({ cls: "docket-drop-indicator" });
     if (idx < cards.length) {
       taskList.insertBefore(indicator, cards[idx]);
     } else {
@@ -643,7 +687,7 @@ var DashboardTab = class {
   removeDropIndicator(taskList) {
     taskList.querySelectorAll(".docket-drop-indicator").forEach((el) => el.remove());
   }
-  spawnInlineCapture(taskList, bucketId, countEl) {
+  spawnInlineCapture(taskList, bucketId, _countEl) {
     if (taskList.querySelector(".docket-inline-capture")) return;
     const input = taskList.createEl("input", {
       cls: "docket-inline-capture",
@@ -667,9 +711,10 @@ var DashboardTab = class {
       if (filteredTags.length === 0) return;
       suggestionBox = taskList.createDiv("docket-tag-suggestions");
       filteredTags.forEach((tag, index) => {
-        const item = suggestionBox.createDiv("docket-tag-suggestion-item");
+        const item = suggestionBox == null ? void 0 : suggestionBox.createDiv("docket-tag-suggestion-item");
+        if (!item) return;
         item.textContent = `#${tag.name}`;
-        item.style.setProperty("--docket-tag-color", tag.color);
+        item.setCssProps({ "--docket-tag-color": tag.color });
         item.dataset.index = String(index);
         item.addEventListener("click", () => {
           var _a;
@@ -683,7 +728,7 @@ var DashboardTab = class {
             input.focus();
             input.setSelectionRange(newText.length, newText.length);
           }
-          suggestionBox.remove();
+          suggestionBox == null ? void 0 : suggestionBox.remove();
           suggestionBox = null;
         });
         item.addEventListener("mouseover", () => {
@@ -775,8 +820,8 @@ var DashboardTab = class {
       }
     });
     input.addEventListener("blur", () => {
-      setTimeout(() => hideSuggestions(), 200);
-      commit();
+      window.setTimeout(() => hideSuggestions(), 200);
+      void commit();
     });
     let committed = false;
     const commit = async () => {
@@ -809,7 +854,7 @@ var DashboardTab = class {
     };
   }
   showTaskContextMenu(e, task) {
-    const menu = new import_obsidian.Menu();
+    const menu = new import_obsidian2.Menu();
     const otherBuckets = this.plugin.settings.buckets.filter((b) => b.id !== task.bucketId);
     if (otherBuckets.length > 0) {
       otherBuckets.sort((a, b) => a.order - b.order).forEach((bucket) => {
@@ -890,7 +935,7 @@ var DashboardTab = class {
     return this.plugin.settings.tasks.filter((t) => t.bucketId === bucketId && !t.isCompleted).sort((a, b) => a.order - b.order);
   }
 };
-var BucketEditModal = class extends import_obsidian.Modal {
+var BucketEditModal = class extends import_obsidian2.Modal {
   constructor(plugin, bucket) {
     super(plugin.app);
     this.plugin = plugin;
@@ -902,19 +947,19 @@ var BucketEditModal = class extends import_obsidian.Modal {
     contentEl.empty();
     contentEl.addClass("docket-bucket-edit-modal");
     contentEl.createEl("h2", { text: "Edit Section" });
-    new import_obsidian.Setting(contentEl).setName("Icon").setDesc("Emoji or short text icon").addText((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Icon").setDesc("Emoji or short text icon").addText((text) => {
       text.setValue(this.bucket.icon).onChange(async (value) => {
         this.bucket.icon = value || "\u{1F4CC}";
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Name").addText((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Name").addText((text) => {
       text.setValue(this.bucket.name).onChange(async (value) => {
         this.bucket.name = value.trim() || "Section";
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Width").setDesc("Section width in pixels").addText((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Width").setDesc("Section width in pixels").addText((text) => {
       var _a2;
       text.inputEl.type = "number";
       text.inputEl.min = "240";
@@ -925,7 +970,7 @@ var BucketEditModal = class extends import_obsidian.Modal {
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Color").setDesc("Accent color for the section header").addColorPicker((picker) => {
+    new import_obsidian2.Setting(contentEl).setName("Color").setDesc("Accent color for the section header").addColorPicker((picker) => {
       picker.setValue(this.bucket.color).onChange(async (value) => {
         this.bucket.color = value;
         await this.plugin.saveSettings();
@@ -933,7 +978,7 @@ var BucketEditModal = class extends import_obsidian.Modal {
     });
     const tooltipDesc = ((_a = this.bucket.tooltip) == null ? void 0 : _a.description) || "";
     const tooltipExamples = ((_c = (_b = this.bucket.tooltip) == null ? void 0 : _b.examples) == null ? void 0 : _c.join("\n")) || "";
-    new import_obsidian.Setting(contentEl).setName("Section Description").setDesc("Purpose of this section (shown in info tooltip)").addTextArea((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Section Description").setDesc("Purpose of this section (shown in info tooltip)").addTextArea((text) => {
       text.setValue(tooltipDesc).onChange(async (value) => {
         if (!this.bucket.tooltip) {
           this.bucket.tooltip = { description: "", examples: [] };
@@ -942,7 +987,7 @@ var BucketEditModal = class extends import_obsidian.Modal {
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Section Examples").setDesc("4 practical examples (one per line, shown in info tooltip)").addTextArea((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Section Examples").setDesc("4 practical examples (one per line, shown in info tooltip)").addTextArea((text) => {
       text.setValue(tooltipExamples).onChange(async (value) => {
         if (!this.bucket.tooltip) {
           this.bucket.tooltip = { description: "", examples: [] };
@@ -956,7 +1001,7 @@ var BucketEditModal = class extends import_obsidian.Modal {
     this.contentEl.empty();
   }
 };
-var ReminderModal = class extends import_obsidian.Modal {
+var ReminderModal = class extends import_obsidian2.Modal {
   constructor(plugin, task) {
     super(plugin.app);
     this.plugin = plugin;
@@ -978,24 +1023,24 @@ var ReminderModal = class extends import_obsidian.Modal {
     let selectedDate = dateStr;
     let selectedTime = timeStr;
     let selectedDateOnly = (_a = this.task.reminderDateOnly) != null ? _a : false;
-    new import_obsidian.Setting(contentEl).setName("Date").addText((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Date").addText((text) => {
       text.inputEl.type = "date";
       text.setValue(dateStr).onChange((value) => {
         selectedDate = value;
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Time").addText((text) => {
+    new import_obsidian2.Setting(contentEl).setName("Time").addText((text) => {
       text.inputEl.type = "time";
       text.setValue(timeStr).onChange((value) => {
         selectedTime = value;
       });
     });
-    new import_obsidian.Setting(contentEl).setName("Date only").setDesc("Show date without sending a notification").addToggle((toggle) => {
+    new import_obsidian2.Setting(contentEl).setName("Date only").setDesc("Show date without sending a notification").addToggle((toggle) => {
       toggle.setValue(selectedDateOnly).onChange((value) => {
         selectedDateOnly = value;
       });
     });
-    new import_obsidian.Setting(contentEl).addButton((btn) => {
+    new import_obsidian2.Setting(contentEl).addButton((btn) => {
       btn.setButtonText("Save reminder").setCta().onClick(async () => {
         const reminderAt = (/* @__PURE__ */ new Date(`${selectedDate}T${selectedTime}`)).getTime();
         if (!Number.isNaN(reminderAt)) {
@@ -1020,7 +1065,7 @@ var ReminderModal = class extends import_obsidian.Modal {
     this.contentEl.empty();
   }
 };
-var BucketTooltipModal = class extends import_obsidian.Modal {
+var BucketTooltipModal = class extends import_obsidian2.Modal {
   constructor(plugin, bucket) {
     super(plugin.app);
     this.plugin = plugin;
@@ -1084,7 +1129,7 @@ var ArchiveTab = class {
   // -------------------------------------------------------------------------
   renderHeader(parent) {
     const header = parent.createDiv("docket-archive-header");
-    header.createEl("h2", { text: "\u{1F4E6} Archive Log" });
+    header.createEl("h2", { text: "\u{1F4E6} Archive log" });
     header.createSpan({
       cls: "docket-archive-subtitle",
       text: "A historical ledger of completed tasks."
@@ -1152,7 +1197,7 @@ var ArchiveTab = class {
     const card = parent.createDiv("docket-archive-card");
     const firstTag = task.tags.length > 0 ? tags.find((t) => t.id === task.tags[0]) : null;
     if (firstTag) {
-      card.style.setProperty("--docket-indicator-color", firstTag.color);
+      card.setCssProps({ "--docket-indicator-color": firstTag.color });
       card.addClass("has-indicator");
     }
     const taskMain = card.createDiv("docket-task-main");
@@ -1180,7 +1225,7 @@ var ArchiveTab = class {
         const tag = tags.find((t) => t.id === tagId);
         if (!tag) return;
         const pill = meta.createSpan({ cls: "docket-inline-tag", text: `#${tag.name}` });
-        pill.style.setProperty("--docket-tag-color", tag.color);
+        pill.setCssProps({ "--docket-tag-color": tag.color });
       });
       if (task.completedAt) {
         const date = new Date(task.completedAt);
@@ -1210,7 +1255,7 @@ var ArchiveTab = class {
 
 // src/DayDeckView.ts
 var VIEW_TYPE_DAYDECK = "daydeck-view";
-var DayDeckView = class extends import_obsidian2.ItemView {
+var DayDeckView = class extends import_obsidian3.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     // State
@@ -1355,7 +1400,7 @@ var DayDeckView = class extends import_obsidian2.ItemView {
         cls: "docket-tag-filter-pill"
       });
       pill.dataset.tagId = tag.id;
-      pill.style.setProperty("--docket-pill-color", tag.color);
+      pill.setCssProps({ "--docket-pill-color": tag.color });
       pill.classList.toggle("is-active", isActive);
       pill.createSpan({ cls: "docket-tag-filter-label", text: `#${tag.name}` });
       if (isActive) {
@@ -1396,44 +1441,30 @@ var DayDeckView = class extends import_obsidian2.ItemView {
 };
 
 // src/settings.ts
-var import_obsidian3 = require("obsidian");
-var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
+var import_obsidian4 = require("obsidian");
+var DayDeckSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
-  display() {
-    const { containerEl } = this;
-    containerEl.empty();
-    containerEl.addClass("docket-settings");
-    const header = containerEl.createDiv("docket-settings-header");
-    header.createEl("h2", { text: "\u{1F5C2}\uFE0F DayDeck" });
-    header.createEl("p", {
-      cls: "docket-settings-intro",
-      text: "Configure your task containers and semantic tags. Changes apply immediately."
-    });
-    this.renderBucketsSection(containerEl);
-    this.renderTagsSection(containerEl);
+  getSettingDefinitions() {
+    return [];
   }
   renderBucketsSection(parent) {
     const section = parent.createDiv("docket-settings-section");
     const sh = section.createDiv("docket-settings-section-header");
-    sh.createEl("h3", { text: "Sections" });
-    sh.createEl("p", {
-      cls: "docket-settings-desc",
-      text: "Task containers displayed on the Dashboard. You can also edit icon and color directly from the dashboard."
-    });
+    new import_obsidian4.Setting(sh).setName("Sections").setHeading().setDesc("Task containers displayed on the Dashboard. You can also edit icon and color directly from the dashboard.");
     const tableWrapper = section.createDiv("docket-settings-table-wrapper");
     this.renderBucketRows(tableWrapper);
     const addBtn = section.createEl("button", {
       cls: "mod-cta docket-add-btn",
-      text: "+ Add Section"
+      text: "+ Add section"
     });
     addBtn.addEventListener("click", async () => {
       const maxOrder = this.plugin.settings.buckets.reduce((max, b) => Math.max(max, b.order), -1);
       this.plugin.settings.buckets.push({
         id: generateId(),
-        name: "New Section",
+        name: "New section",
         icon: "\u{1F4CC}",
         color: "#888888",
         order: maxOrder + 1,
@@ -1441,7 +1472,7 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
         widthPx: 320
       });
       await this.plugin.saveSettings();
-      this.display();
+      this.update();
     });
   }
   renderBucketRows(container) {
@@ -1483,14 +1514,14 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
       const colorCell = row.createDiv("docket-settings-cell");
       const colorWrapper = colorCell.createDiv("docket-color-input-wrapper");
       const colorSwatch = colorWrapper.createDiv("docket-color-swatch");
-      colorSwatch.style.backgroundColor = bucket.color;
+      colorSwatch.setCssStyles({ backgroundColor: bucket.color });
       const colorInput = colorWrapper.createEl("input", {
         cls: "docket-settings-color-input",
         attr: { type: "color", value: bucket.color }
       });
       colorInput.addEventListener("input", async () => {
         bucket.color = colorInput.value;
-        colorSwatch.style.backgroundColor = bucket.color;
+        colorSwatch.setCssStyles({ backgroundColor: bucket.color });
         await this.plugin.saveSettings();
       });
       const counterCell = row.createDiv("docket-settings-cell");
@@ -1508,7 +1539,7 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
         cls: "docket-icon-btn",
         attr: { title: "Move up" }
       });
-      upBtn.createEl("span", { text: "\u2191" });
+      upBtn.createSpan({ text: "\u2191" });
       if (index === 0) {
         upBtn.disabled = true;
       } else {
@@ -1516,14 +1547,14 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
           const prev = sorted[index - 1];
           [bucket.order, prev.order] = [prev.order, bucket.order];
           await this.plugin.saveSettings();
-          this.display();
+          this.update();
         });
       }
       const downBtn = actCell.createEl("button", {
         cls: "docket-icon-btn",
         attr: { title: "Move down" }
       });
-      downBtn.createEl("span", { text: "\u2193" });
+      downBtn.createSpan({ text: "\u2193" });
       if (index === sorted.length - 1) {
         downBtn.disabled = true;
       } else {
@@ -1531,7 +1562,7 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
           const next = sorted[index + 1];
           [bucket.order, next.order] = [next.order, bucket.order];
           await this.plugin.saveSettings();
-          this.display();
+          this.update();
         });
       }
       const delBtn = actCell.createEl("button", {
@@ -1539,36 +1570,29 @@ var DayDeckSettingTab = class extends import_obsidian3.PluginSettingTab {
         attr: { title: `Delete "${bucket.name}" (tasks are preserved)` },
         text: "Delete"
       });
-      delBtn.addEventListener("click", async () => {
-        if (!confirm(
-          `Delete section "${bucket.name}"?
+      delBtn.addEventListener("click", () => {
+        new ConfirmModal(this.plugin.app, `Delete section "${bucket.name}"?
 
-Tasks inside will remain but won't appear on the Dashboard until assigned to another section.`
-        )) {
-          return;
-        }
-        this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
-          (b) => b.id !== bucket.id
-        );
-        normalizeBucketOrder(this.plugin.settings.buckets);
-        await this.plugin.saveSettings();
-        this.display();
+Tasks inside will remain but won't appear on the Dashboard until assigned to another section.`, async () => {
+          this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
+            (b) => b.id !== bucket.id
+          );
+          normalizeBucketOrder(this.plugin.settings.buckets);
+          await this.plugin.saveSettings();
+          this.update();
+        }).open();
       });
     });
   }
   renderTagsSection(parent) {
     const section = parent.createDiv("docket-settings-section");
     const sh = section.createDiv("docket-settings-section-header");
-    sh.createEl("h3", { text: "Semantic Tags" });
-    sh.createEl("p", {
-      cls: "docket-settings-desc",
-      text: "Tags categorize tasks and enable filtering. Use #TagName syntax when creating tasks. The DeepWork tag is the default deep work tag."
-    });
+    new import_obsidian4.Setting(sh).setName("Semantic tags").setHeading().setDesc("Tags categorize tasks and enable filtering. Use #TagName syntax when creating tasks. The DeepWork tag is the default deep work tag.");
     const tableWrapper = section.createDiv("docket-settings-table-wrapper");
     this.renderTagRows(tableWrapper);
     const addBtn = section.createEl("button", {
       cls: "mod-cta docket-add-btn",
-      text: "+ Add Tag"
+      text: "+ Add tag"
     });
     addBtn.addEventListener("click", async () => {
       this.plugin.settings.tags.push({
@@ -1577,7 +1601,7 @@ Tasks inside will remain but won't appear on the Dashboard until assigned to ano
         color: "#888888"
       });
       await this.plugin.saveSettings();
-      this.display();
+      this.update();
     });
   }
   renderTagRows(container) {
@@ -1610,15 +1634,15 @@ Tasks inside will remain but won't appear on the Dashboard until assigned to ano
       const colorCell = row.createDiv("docket-settings-cell");
       const colorWrapper = colorCell.createDiv("docket-color-input-wrapper");
       const colorSwatch = colorWrapper.createDiv("docket-color-swatch");
-      colorSwatch.style.backgroundColor = tag.color;
+      colorSwatch.setCssStyles({ backgroundColor: tag.color });
       const colorInput = colorWrapper.createEl("input", {
         cls: "docket-settings-color-input",
         attr: { type: "color", value: tag.color }
       });
       colorInput.addEventListener("input", async () => {
         tag.color = colorInput.value;
-        colorSwatch.style.backgroundColor = tag.color;
-        previewPill.style.setProperty("--docket-tag-color", tag.color);
+        colorSwatch.setCssStyles({ backgroundColor: tag.color });
+        previewPill.setCssProps({ "--docket-tag-color": tag.color });
         await this.plugin.saveSettings();
       });
       const previewCell = row.createDiv("docket-settings-cell");
@@ -1626,34 +1650,35 @@ Tasks inside will remain but won't appear on the Dashboard until assigned to ano
         cls: "docket-inline-tag",
         text: `#${tag.name}`
       });
-      previewPill.style.setProperty("--docket-tag-color", tag.color);
+      previewPill.setCssProps({ "--docket-tag-color": tag.color });
       const actCell = row.createDiv("docket-settings-cell");
       const delBtn = actCell.createEl("button", {
         cls: "mod-warning docket-del-btn",
         text: "Delete",
         attr: { title: `Delete #${tag.name} (removed from all tasks)` }
       });
-      delBtn.addEventListener("click", async () => {
-        var _a, _b;
-        if (!confirm(`Delete tag #${tag.name}?
+      delBtn.addEventListener("click", () => {
+        new ConfirmModal(this.plugin.app, `Delete tag #${tag.name}?
 
-It will be removed from all tasks.`)) return;
-        this.plugin.settings.tags = this.plugin.settings.tags.filter((t) => t.id !== tag.id);
-        this.plugin.settings.tasks.forEach((task) => {
-          task.tags = task.tags.filter((id) => id !== tag.id);
-        });
-        if (this.plugin.settings.deepWorkTagId === tag.id) {
-          this.plugin.settings.deepWorkTagId = (_b = (_a = this.plugin.settings.tags[0]) == null ? void 0 : _a.id) != null ? _b : "";
-        }
-        await this.plugin.saveSettings();
-        this.display();
+It will be removed from all tasks.`, async () => {
+          var _a, _b;
+          this.plugin.settings.tags = this.plugin.settings.tags.filter((t) => t.id !== tag.id);
+          this.plugin.settings.tasks.forEach((task) => {
+            task.tags = task.tags.filter((id) => id !== tag.id);
+          });
+          if (this.plugin.settings.deepWorkTagId === tag.id) {
+            this.plugin.settings.deepWorkTagId = (_b = (_a = this.plugin.settings.tags[0]) == null ? void 0 : _a.id) != null ? _b : "";
+          }
+          await this.plugin.saveSettings();
+          this.update();
+        }).open();
       });
     });
   }
 };
 
 // src/main.ts
-var DayDeckPlugin = class extends import_obsidian4.Plugin {
+var DayDeckPlugin = class extends import_obsidian5.Plugin {
   // -------------------------------------------------------------------------
   // Lifecycle
   // -------------------------------------------------------------------------
@@ -1661,23 +1686,20 @@ var DayDeckPlugin = class extends import_obsidian4.Plugin {
     await this.loadSettings();
     this.registerView(VIEW_TYPE_DAYDECK, (leaf) => new DayDeckView(leaf, this));
     this.addRibbonIcon("folder-kanban", "Open DayDeck", () => {
-      this.activateView();
+      void this.activateView();
     });
     this.addCommand({
-      id: "open-daydeck",
-      name: "Open DayDeck dashboard",
+      id: "open-dashboard",
+      name: "Open dashboard",
       callback: () => {
-        this.activateView();
+        void this.activateView();
       }
     });
     this.addSettingTab(new DayDeckSettingTab(this.app, this));
     this.startReminderMonitor();
-    console.log("DayDeck: plugin loaded");
   }
   onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_DAYDECK);
     this.stopReminderMonitor();
-    console.log("DayDeck: plugin unloaded");
   }
   // -------------------------------------------------------------------------
   // View management
@@ -1691,12 +1713,12 @@ var DayDeckPlugin = class extends import_obsidian4.Plugin {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(VIEW_TYPE_DAYDECK);
     if (existing.length > 0) {
-      workspace.revealLeaf(existing[0]);
+      workspace.setActiveLeaf(existing[0]);
       return;
     }
     const leaf = workspace.getLeaf("tab");
     await leaf.setViewState({ type: VIEW_TYPE_DAYDECK, active: true });
-    workspace.revealLeaf(leaf);
+    workspace.setActiveLeaf(leaf);
   }
   // -------------------------------------------------------------------------
   // Settings persistence
@@ -1791,17 +1813,17 @@ var DayDeckPlugin = class extends import_obsidian4.Plugin {
         return;
       }
       if (window.Notification.permission === "default") {
-        window.Notification.requestPermission().then((permission) => {
+        void window.Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
             new window.Notification(title, { body, tag: `daydeck-reminder-${task.id}` });
           } else {
-            new import_obsidian4.Notice(`${title}: ${body}`);
+            new import_obsidian5.Notice(`${title}: ${body}`);
           }
         });
         return;
       }
     }
-    new import_obsidian4.Notice(`${title}: ${body}`);
+    new import_obsidian5.Notice(`${title}: ${body}`);
   }
   /**
    * Persist the current settings object and refresh any open DayDeck views.

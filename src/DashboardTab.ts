@@ -20,6 +20,7 @@ import {
   formatWaitingTime,
   normalizeBucketOrder,
 } from './types';
+import { ConfirmModal } from './ConfirmModal';
 
 let _draggedTaskId: string | null = null;
 let _draggedBucketId: string | null = null;
@@ -41,12 +42,12 @@ export class DashboardTab {
     const sorted = [...this.plugin.settings.buckets].sort((a, b) => a.order - b.order);
     sorted.forEach((bucket) => this.renderBucket(bucket, grid));
 
-    const addSectionBtn = inner.createDiv({ cls: 'docket-add-section-btn', text: '+ Add Section' });
+    const addSectionBtn = inner.createDiv({ cls: 'docket-add-section-btn', text: '+ Add section' });
     addSectionBtn.addEventListener('click', async () => {
       const maxOrder = this.plugin.settings.buckets.reduce((max, b) => Math.max(max, b.order), -1);
       this.plugin.settings.buckets.push({
         id: generateId(),
-        name: 'New Section',
+        name: 'New section',
         icon: '📌',
         color: '#888888',
         order: maxOrder + 1,
@@ -62,10 +63,10 @@ export class DashboardTab {
 
     const bucketEl = parent.createDiv('docket-bucket');
     bucketEl.dataset.bucketId = bucket.id;
-    bucketEl.style.setProperty('--docket-bucket-color', bucket.color);
+    bucketEl.setCssProps({ '--docket-bucket-color': bucket.color });
     const widthPx = Math.max(240, Math.min(900, bucket.widthPx ?? 320));
-    bucketEl.style.setProperty('--docket-bucket-width', `${widthPx}px`);
-    bucketEl.style.width = `${widthPx}px`;
+    bucketEl.setCssProps({ '--docket-bucket-width': `${widthPx}px` });
+    bucketEl.setCssStyles({ width: `${widthPx}px` });
 
     const resizeHandle = bucketEl.createDiv('docket-bucket-resize-handle');
     resizeHandle.addEventListener('pointerdown', (e) => {
@@ -117,19 +118,15 @@ export class DashboardTab {
       text: '🗑️',
       attr: { title: 'Delete section' },
     });
-    delBtn.addEventListener('click', async (e: MouseEvent) => {
+    delBtn.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation();
-      if (
-        confirm(
-          `Delete section "${bucket.name}"? Tasks inside will remain but won't appear on the Dashboard.`,
-        )
-      ) {
+      new ConfirmModal(this.plugin.app, `Delete section "${bucket.name}"?\nTasks inside will remain but won't appear on the Dashboard.`, async () => {
         this.plugin.settings.buckets = this.plugin.settings.buckets.filter(
           (b) => b.id !== bucket.id,
         );
         normalizeBucketOrder(this.plugin.settings.buckets);
         await this.plugin.saveSettings();
-      }
+      }).open();
     });
 
     this.setupBucketDrag(header, bucketEl, bucket.id);
@@ -171,8 +168,7 @@ export class DashboardTab {
     const maxWidth = 900;
 
     bucketEl.addClass('is-resizing');
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+    document.body.addClass('docket-is-resizing');
 
     const onMove = (moveEvent: PointerEvent) => {
       const nextWidth = Math.max(
@@ -180,16 +176,15 @@ export class DashboardTab {
         Math.min(maxWidth, startWidth + (moveEvent.clientX - startX)),
       );
       bucket.widthPx = nextWidth;
-      bucketEl.style.setProperty('--docket-bucket-width', `${nextWidth}px`);
-      bucketEl.style.width = `${nextWidth}px`;
+      bucketEl.setCssProps({ '--docket-bucket-width': `${nextWidth}px` });
+      bucketEl.setCssStyles({ width: `${nextWidth}px` });
     };
 
     const finish = async () => {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', finish);
       bucketEl.removeClass('is-resizing');
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.removeClass('docket-is-resizing');
       await this.plugin.saveSettings(true);
     };
 
@@ -207,10 +202,12 @@ export class DashboardTab {
 
   private setupBucketDrag(header: HTMLElement, bucketEl: HTMLElement, bucketId: string): void {
     header.addEventListener('dragstart', (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!dataTransfer) return;
       _draggedBucketId = bucketId;
-      e.dataTransfer!.setData('application/docket-bucket', bucketId);
-      e.dataTransfer!.effectAllowed = 'move';
-      setTimeout(() => bucketEl.addClass('docket-bucket-dragging'), 0);
+      dataTransfer.setData('application/docket-bucket', bucketId);
+      dataTransfer.effectAllowed = 'move';
+      window.setTimeout(() => bucketEl.addClass('docket-bucket-dragging'), 0);
     });
 
     header.addEventListener('dragend', () => {
@@ -222,9 +219,10 @@ export class DashboardTab {
     });
 
     bucketEl.addEventListener('dragover', (e: DragEvent) => {
-      if (!_draggedBucketId || _draggedBucketId === bucketId) return;
+      const dataTransfer = e.dataTransfer;
+      if (!_draggedBucketId || _draggedBucketId === bucketId || !dataTransfer) return;
       e.preventDefault();
-      e.dataTransfer!.dropEffect = 'move';
+      dataTransfer.dropEffect = 'move';
       bucketEl.addClass('docket-bucket-drop-target');
     });
 
@@ -235,10 +233,11 @@ export class DashboardTab {
     });
 
     bucketEl.addEventListener('drop', async (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
       e.preventDefault();
       bucketEl.removeClass('docket-bucket-drop-target');
 
-      const sourceId = e.dataTransfer!.getData('application/docket-bucket') || _draggedBucketId;
+      const sourceId = dataTransfer?.getData('application/docket-bucket') || _draggedBucketId;
       if (!sourceId || sourceId === bucketId) return;
 
       const buckets = [...this.plugin.settings.buckets].sort((a, b) => a.order - b.order);
@@ -267,7 +266,7 @@ export class DashboardTab {
 
     const firstTag = task.tags.length > 0 ? tags.find((t) => t.id === task.tags[0]) : null;
     if (firstTag) {
-      card.style.setProperty('--docket-indicator-color', firstTag.color);
+      card.setCssProps({ '--docket-indicator-color': firstTag.color });
       card.addClass('has-indicator');
     }
 
@@ -276,7 +275,7 @@ export class DashboardTab {
     const checkbox = taskMain.createEl('input', {
       cls: 'docket-task-checkbox',
       attr: { type: 'checkbox' },
-    }) as HTMLInputElement;
+    });
     checkbox.checked = task.isCompleted;
 
     checkbox.addEventListener('change', async () => {
@@ -290,10 +289,10 @@ export class DashboardTab {
     textEl.addEventListener('dblclick', (e: MouseEvent) => {
       e.stopPropagation();
 
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'docket-task-edit-input';
-      input.value = task.text;
+      const input = taskMain.createEl('input', {
+        cls: 'docket-task-edit-input',
+        attr: { type: 'text', value: task.text },
+      });
 
       taskMain.replaceChild(input, textEl);
       input.focus();
@@ -380,7 +379,7 @@ export class DashboardTab {
       const tag = tags.find((t) => t.id === tagId);
       if (!tag) return;
       const pill = metaRow.createSpan({ cls: 'docket-inline-tag', text: `#${tag.name}` });
-      pill.style.setProperty('--docket-tag-color', tag.color);
+      pill.setCssProps({ '--docket-tag-color': tag.color });
 
       const removeTag = pill.createSpan({ cls: 'docket-inline-tag-remove', text: '×' });
       removeTag.addEventListener('click', async (e: MouseEvent) => {
@@ -408,14 +407,16 @@ export class DashboardTab {
 
     card.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      this.showTaskContextMenu(e as MouseEvent, task);
+      this.showTaskContextMenu(e, task);
     });
 
     card.addEventListener('dragstart', (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
+      if (!dataTransfer) return;
       _draggedTaskId = task.id;
-      e.dataTransfer!.setData('text/plain', task.id);
-      e.dataTransfer!.effectAllowed = 'move';
-      setTimeout(() => card.addClass('docket-dragging'), 0);
+      dataTransfer.setData('text/plain', task.id);
+      dataTransfer.effectAllowed = 'move';
+      window.setTimeout(() => card.addClass('docket-dragging'), 0);
     });
 
     card.addEventListener('dragend', () => {
@@ -456,9 +457,10 @@ export class DashboardTab {
 
   private setupDropZone(taskList: HTMLElement, bucketId: string, countEl: HTMLElement): void {
     taskList.addEventListener('dragover', (e: DragEvent) => {
-      if (_draggedBucketId) return;
+      const dataTransfer = e.dataTransfer;
+      if (_draggedBucketId || !dataTransfer) return;
       e.preventDefault();
-      e.dataTransfer!.dropEffect = 'move';
+      dataTransfer.dropEffect = 'move';
       taskList.addClass('docket-drag-over');
       this.updateDropIndicator(taskList, e.clientY);
     });
@@ -471,12 +473,13 @@ export class DashboardTab {
     });
 
     taskList.addEventListener('drop', async (e: DragEvent) => {
+      const dataTransfer = e.dataTransfer;
       if (_draggedBucketId) return;
       e.preventDefault();
       taskList.removeClass('docket-drag-over');
       this.removeDropIndicator(taskList);
 
-      const taskId = e.dataTransfer!.getData('text/plain') || _draggedTaskId;
+      const taskId = dataTransfer?.getData('text/plain') || _draggedTaskId;
       if (!taskId) return;
 
       const task = this.plugin.settings.tasks.find((t) => t.id === taskId);
@@ -521,7 +524,7 @@ export class DashboardTab {
       taskList.querySelectorAll<HTMLElement>('.docket-task-card:not(.docket-dragging)'),
     );
     const idx = this.getDropIndex(cards, mouseY);
-    const indicator = createEl('div', { cls: 'docket-drop-indicator' });
+    const indicator = createDiv({ cls: 'docket-drop-indicator' });
     if (idx < cards.length) {
       taskList.insertBefore(indicator, cards[idx]);
     } else {
@@ -533,13 +536,13 @@ export class DashboardTab {
     taskList.querySelectorAll('.docket-drop-indicator').forEach((el) => el.remove());
   }
 
-  private spawnInlineCapture(taskList: HTMLElement, bucketId: string, countEl: HTMLElement): void {
+  private spawnInlineCapture(taskList: HTMLElement, bucketId: string, _countEl: HTMLElement): void {
     if (taskList.querySelector('.docket-inline-capture')) return;
 
     const input = taskList.createEl('input', {
       cls: 'docket-inline-capture',
       attr: { type: 'text', placeholder: 'New task… use #tag and Enter to save' },
-    }) as HTMLInputElement;
+    });
     input.focus();
 
     // Tag suggestions
@@ -564,9 +567,10 @@ export class DashboardTab {
 
       suggestionBox = taskList.createDiv('docket-tag-suggestions');
       filteredTags.forEach((tag, index) => {
-        const item = suggestionBox!.createDiv('docket-tag-suggestion-item');
+        const item = suggestionBox?.createDiv('docket-tag-suggestion-item');
+        if (!item) return;
         item.textContent = `#${tag.name}`;
-        item.style.setProperty('--docket-tag-color', tag.color);
+        item.setCssProps({ '--docket-tag-color': tag.color });
         item.dataset.index = String(index);
 
         item.addEventListener('click', () => {
@@ -582,7 +586,7 @@ export class DashboardTab {
             input.focus();
             input.setSelectionRange(newText.length, newText.length);
           }
-          suggestionBox!.remove();
+          suggestionBox?.remove();
           suggestionBox = null;
         });
 
@@ -682,8 +686,8 @@ export class DashboardTab {
     });
 
     input.addEventListener('blur', () => {
-      setTimeout(() => hideSuggestions(), 200);
-      commit();
+      window.setTimeout(() => hideSuggestions(), 200);
+      void commit();
     });
 
     let committed = false;

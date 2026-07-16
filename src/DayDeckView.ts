@@ -211,7 +211,7 @@ export class DayDeckView extends ItemView {
         cls: 'docket-tag-filter-pill',
       });
       pill.dataset.tagId = tag.id;
-      pill.style.setProperty('--docket-pill-color', tag.color);
+      pill.setCssProps({ '--docket-pill-color': tag.color });
       pill.classList.toggle('is-active', isActive);
 
       pill.createSpan({ cls: 'docket-tag-filter-label', text: `#${tag.name}` });

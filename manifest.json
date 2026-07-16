@@ -2,10 +2,10 @@
   "id": "daydeck",
   "name": "DayDeck",
   "version": "1.0.1",
-  "minAppVersion": "1.4.0",
+  "minAppVersion": "1.13.0",
   "description": "A task manager for organizing your work.",
   "author": "Shivraj Rath",
-  "authorUrl": "https://github.com/ShivrajRath/daydeck",
+  "authorUrl": "https://novicelab.org",
   "fundingUrl": "https://ko-fi.com/raths",
   "isDesktopOnly": false
 }
